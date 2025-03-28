@@ -552,7 +552,8 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
             y_pred_probs, y_pred_labels = torch.max(torch.nn.functional.softmax(y_pred, dim=1), dim=1) # Logits to labels
             # !!!
             
-            y_pred, count = torch.mode(y_pred_labels) # Get the most frequent label as the predicted label
+            # y_pred, count = torch.mode(y_pred_labels) # Get the most frequent label as the predicted label
+            y_pred = torch.bincount(y_pred_labels).argmax()
             y_pred = y_pred.item()
             
             if debug:
@@ -568,9 +569,9 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
             
     avg_loss = sum(loss_list)/len(loss_list) if loss_list else None
     acc = accuracy_score(y_gt_list, y_pred_list)
-    f1 = f1_score(y_gt_list, y_pred_list, average=average, zero_division=0)
-    precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0)
-    recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0)
+    f1 = f1_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
+    precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
+    recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
 
@@ -1903,4 +1904,18 @@ def set_seed(seed):
     # Set random seed for os
     os.environ['PYTHONHASHSEED'] = str(seed)
 
-    print(f"Random seed set to: {seed}")
+    print(f"Random seed: {seed}")
+
+def init_metrics():
+    metric_names = ['acc', 'f1', 'precision', 'recall']
+    metrics = {metric_name: {'folds': [], 'avg': None, 'std': None} for metric_name in metric_names}
+    metrics.update({'cm': {'folds': []}, 'val_loss': {'folds': []}})
+    return metrics
+
+def update_metrics(metrics, in_metrics):
+    for metric_name in ['acc', 'f1', 'precision', 'recall', 'cm']:
+        metrics[metric_name]['folds'] += [in_metrics[metric_name]]
+        if metric_name != 'cm':
+            metrics[metric_name]['avg'] = np.mean(metrics[metric_name]['folds']).item()
+            metrics[metric_name]['std'] = np.std(metrics[metric_name]['folds']).item()
+    return metrics
