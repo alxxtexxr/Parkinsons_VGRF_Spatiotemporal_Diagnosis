@@ -8,7 +8,11 @@ from typing import Tuple
 from IPython import display
 from torch.utils.data import Dataset, DataLoader
 from scipy import stats as st
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
+
+import random
+import transformers
+import matplotlib.pyplot as plt
 
 class TorchDataset(Dataset):
     def __init__(self, X, y):
@@ -525,6 +529,7 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     loss_list = [] if criterion else None
     y_gt_list = []
     y_pred_list = []
+    y_pred_score_list = []
 
     with torch.no_grad():
         for i, (X_person, y_person) in enumerate(dataset):
@@ -555,6 +560,29 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
             # y_pred, count = torch.mode(y_pred_labels) # Get the most frequent label as the predicted label
             y_pred = torch.bincount(y_pred_labels).argmax()
             y_pred = y_pred.item()
+
+            # Calculate confident score
+            y_pred_probs, y_pred_labels = y_pred_probs.cpu().numpy(), y_pred_labels.cpu().numpy()
+
+            # if y_pred == 0:
+            #     y_pred_labels_correct = np.where(y_pred_labels == y_pred, 0, 1)
+            #     y_pred_probs_correct = y_pred_probs * y_pred_labels_correct # TODO: Check if there is zero in y_pred_probs_correct
+            #     y_pred_score = 1.0 - np.mean(y_pred_probs_correct).item()
+            # else:
+            y_pred_labels_correct = np.where(y_pred_labels == y_pred, 1, 0)
+            y_pred_probs_correct = y_pred_probs * y_pred_labels_correct # TODO: Check if there is zero in y_pred_probs_correct
+            y_pred_score = np.mean(y_pred_probs_correct).item()
+            if y_pred == 0:
+                y_pred_score = 1.0 - y_pred_score
+
+            # print()
+            # print(f'{y_pred=}')
+            # print(f'{y_pred_labels=}')
+            # print(f'{y_pred_labels_correct=}')
+            # print(f'{y_pred_probs=}')
+            # print(f'{y_pred_probs_correct=}')    
+            # print(f'{y_pred_score=}')        
+            # print()
             
             if debug:
                 print(f"person: {(i+1):02d}, "
@@ -565,6 +593,7 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
                     print()
             
             y_pred_list.append(y_pred)
+            y_pred_score_list.append(y_pred_score)
             y_gt_list.append(y_person.item())
             
     avg_loss = sum(loss_list)/len(loss_list) if loss_list else None
@@ -573,7 +602,20 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
     recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
-    return avg_loss, acc, f1, precision, recall, cm
+
+    # Calculate ROC AUC
+    y_gt_list_binary = np.where(np.array(y_gt_list) == 0, 0, 1)
+
+    # print(f'{y_gt_list_binary=}')
+    # print(f'{y_pred_score_list=}')
+    # for gt, score in zip(y_gt_list_binary, y_pred_score_list):
+    #     print(gt, '<-->', score)
+
+    fpr, tpr, _ = roc_curve(y_gt_list_binary, y_pred_score_list)
+    fpr, tpr = fpr.tolist(), tpr.tolist()
+    roc_auc = auc(fpr, tpr).item()
+
+    return avg_loss, acc, f1, precision, recall, cm, fpr, tpr, roc_auc
 
 # def eval_person_max_severity(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_max_severity(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
@@ -1881,9 +1923,6 @@ def eval_person_max_severity_xfx(model, dataset, window_size, stride_size, zeros
 # ================================================================
 # NEW UPDATES
 # ================================================================
-import random
-import transformers
-
 def set_seed(seed):
     # Set random seed for NumPy
     np.random.seed(seed)
@@ -1906,16 +1945,50 @@ def set_seed(seed):
 
     print(f"Random seed: {seed}")
 
-def init_metrics():
-    metric_names = ['acc', 'f1', 'precision', 'recall']
-    metrics = {metric_name: {'folds': [], 'avg': None, 'std': None} for metric_name in metric_names}
-    metrics.update({'cm': {'folds': []}, 'val_loss': {'folds': []}})
+def init_metrics(metric_names=['acc', 'f1', 'precision', 'recall', 'cm']):
+    metrics = {}
+    for metric_name in metric_names:
+        if metric_name in ['cm', 'fpr', 'tpr']:
+            metrics[metric_name] = {'folds': []}
+        else:
+            metrics[metric_name] = {'folds': [], 'avg': None, 'std': None}
     return metrics
 
 def update_metrics(metrics, in_metrics):
-    for metric_name in ['acc', 'f1', 'precision', 'recall', 'cm']:
+    for metric_name in in_metrics.keys():
         metrics[metric_name]['folds'] += [in_metrics[metric_name]]
-        if metric_name != 'cm':
+        if metric_name not in ['cm', 'fpr', 'tpr']:
             metrics[metric_name]['avg'] = np.mean(metrics[metric_name]['folds']).item()
             metrics[metric_name]['std'] = np.std(metrics[metric_name]['folds']).item()
     return metrics
+
+def plot_k_fold_metrics_roc_curve(metrics, k_fold, num_cols=5):
+    # Determine the grid size for subplots
+    num_rows = (k_fold + num_cols - 1) // num_cols # Calculate number of rows
+
+    # Create subplots
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 5, num_rows * 5))
+    axes = axes.flatten() # Flatten the 2D array of axes for easy indexing
+
+    for i_fold in range(k_fold):
+        tpr = metrics['tpr']['folds'][i_fold]
+        fpr = metrics['fpr']['folds'][i_fold]
+        roc_auc = metrics['roc_auc']['folds'][i_fold]
+
+        ax = axes[i_fold]
+        ax.plot(fpr, tpr, color='blue', lw=2, label=f"AUC = {roc_auc:.2f}")
+        ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel("FPR")
+        ax.set_ylabel("TPR")
+        ax.set_title(f"Fold-{i_fold+1} ROC Curve")
+        ax.legend(loc='lower right')
+        ax.grid()
+
+    # Remove empty subplots if k_fold < total grid spaces
+    for i in range(k_fold, len(axes)):
+        fig.delaxes(axes[i])
+
+    plt.tight_layout()
+    plt.show()
