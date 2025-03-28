@@ -1876,3 +1876,31 @@ def eval_person_max_severity_xfx(model, dataset, window_size, stride_size, zeros
     recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0)
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
+
+# ================================================================
+# NEW UPDATES
+# ================================================================
+import random
+import transformers
+
+def set_seed(seed):
+    # Set random seed for NumPy
+    np.random.seed(seed)
+
+    # Set random seed for Torch
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # if using multi-GPU
+    torch.backends.cudnn.deterministic = True  # Ensures deterministic results
+    torch.backends.cudnn.benchmark = False  # Avoids non-deterministic algorithms
+
+    # Set random seed for Transformers
+    transformers.set_seed(seed)
+
+    # Optionally set random seed for sklearn and Python's own random module
+    random.seed(seed)
+
+    # Set random seed for os
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+    print(f"Random seed set to: {seed}")
