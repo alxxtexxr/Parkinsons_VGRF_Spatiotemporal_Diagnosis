@@ -1,8 +1,6 @@
 *.local.*
 __pycache__
 .DS_Store
-# checkpoints/**/*.pth
-# data/**/*.npy
+checkpoints/**/*.pth
+data/**/*.npy
 evaluations
-data
-checkpoints
