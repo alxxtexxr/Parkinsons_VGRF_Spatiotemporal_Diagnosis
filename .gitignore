@@ -1,5 +1,8 @@
 *.local.*
 __pycache__
 .DS_Store
+# checkpoints/**/*.pth
+# data/**/*.npy
 evaluations
-_*
+data
+checkpoints
