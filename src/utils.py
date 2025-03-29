@@ -1962,12 +1962,12 @@ def update_metrics(metrics, in_metrics):
             metrics[metric_name]['std'] = np.std(metrics[metric_name]['folds']).item()
     return metrics
 
-def plot_k_fold_metrics_roc_curve(metrics, k_fold, num_cols=5):
+def plot_k_fold_metrics_roc_curves(metrics, k_fold, n_col=5):
     # Determine the grid size for subplots
-    num_rows = (k_fold + num_cols - 1) // num_cols # Calculate number of rows
+    n_row = (k_fold + n_col - 1) // n_col # Calculate number of rows
 
     # Create subplots
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 5, num_rows * 5))
+    fig, axes = plt.subplots(n_row, n_col, figsize=(n_col * 5, n_row * 5))
     axes = axes.flatten() # Flatten the 2D array of axes for easy indexing
 
     for i_fold in range(k_fold):
@@ -1992,3 +1992,28 @@ def plot_k_fold_metrics_roc_curve(metrics, k_fold, num_cols=5):
 
     plt.tight_layout()
     plt.show()
+
+def save_k_fold_metrics_roc_curves(metrics, k_fold):
+    for i_fold in range(k_fold):
+        # Extract ROC metrics for the current fold
+        tpr = metrics['tpr']['folds'][i_fold]
+        fpr = metrics['fpr']['folds'][i_fold]
+        roc_auc = metrics['roc_auc']['folds'][i_fold]
+
+        # Create a new figure for each fold
+        plt.figure(figsize=(6, 6))
+        plt.plot(fpr, tpr, color='blue', lw=2, label=f"AUC = {roc_auc:.2f}")
+        plt.plot([0, 1], [0, 1], color='gray', linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel("FPR")
+        plt.ylabel("TPR")
+        plt.title(f"Fold-{i_fold+1} ROC Curve")
+        plt.legend(loc='lower right')
+        plt.grid()
+
+        # Save the figure separately
+        plt.savefig(f'roc_curve_fold_{i_fold+1}.png')
+        plt.close() # Close the figure to free memory
+
+    print(f"All {k_fold}-Folds ROC curve figures saved successfully.")
