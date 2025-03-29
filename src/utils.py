@@ -1,18 +1,17 @@
 import os
 import time
+import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
+import transformers
 from typing import Tuple
 from IPython import display
 from torch.utils.data import Dataset, DataLoader
 from scipy import stats as st
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
-
-import random
-import transformers
-import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc, roc_auc_score
+from sklearn.preprocessing import label_binarize
 
 class TorchDataset(Dataset):
     def __init__(self, X, y):
@@ -530,6 +529,7 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     y_gt_list = []
     y_pred_list = []
     y_pred_score_list = []
+    y_pred_scores_list = []
 
     with torch.no_grad():
         for i, (X_person, y_person) in enumerate(dataset):
@@ -554,9 +554,10 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
                 loss_list.append(loss.item())
             
             # Calculate metrics
-            y_pred_probs, y_pred_labels = torch.max(torch.nn.functional.softmax(y_pred, dim=1), dim=1) # Logits to labels
-            # !!!
-            
+            y_pred_probs_all = torch.nn.functional.softmax(y_pred, dim=1) # Logits to labels
+            y_pred_probs_avg = y_pred_probs_all.mean(dim=0)
+            y_pred_probs, y_pred_labels = torch.max(y_pred_probs_all, dim=1)
+
             # y_pred, count = torch.mode(y_pred_labels) # Get the most frequent label as the predicted label
             y_pred = torch.bincount(y_pred_labels).argmax()
             y_pred = y_pred.item()
@@ -564,25 +565,11 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
             # Calculate confident score
             y_pred_probs, y_pred_labels = y_pred_probs.cpu().numpy(), y_pred_labels.cpu().numpy()
 
-            # if y_pred == 0:
-            #     y_pred_labels_correct = np.where(y_pred_labels == y_pred, 0, 1)
-            #     y_pred_probs_correct = y_pred_probs * y_pred_labels_correct # TODO: Check if there is zero in y_pred_probs_correct
-            #     y_pred_score = 1.0 - np.mean(y_pred_probs_correct).item()
-            # else:
             y_pred_labels_correct = np.where(y_pred_labels == y_pred, 1, 0)
             y_pred_probs_correct = y_pred_probs * y_pred_labels_correct # TODO: Check if there is zero in y_pred_probs_correct
             y_pred_score = np.mean(y_pred_probs_correct).item()
             if y_pred == 0:
                 y_pred_score = 1.0 - y_pred_score
-
-            # print()
-            # print(f'{y_pred=}')
-            # print(f'{y_pred_labels=}')
-            # print(f'{y_pred_labels_correct=}')
-            # print(f'{y_pred_probs=}')
-            # print(f'{y_pred_probs_correct=}')    
-            # print(f'{y_pred_score=}')        
-            # print()
             
             if debug:
                 print(f"person: {(i+1):02d}, "
@@ -593,29 +580,53 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
                     print()
             
             y_pred_list.append(y_pred)
-            y_pred_score_list.append(y_pred_score)
             y_gt_list.append(y_person.item())
+            y_pred_score_list.append(y_pred_score)
+            y_pred_scores_list.append(y_pred_probs_avg.tolist())
             
     avg_loss = sum(loss_list)/len(loss_list) if loss_list else None
     acc = accuracy_score(y_gt_list, y_pred_list)
-    f1 = f1_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
-    precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
-    recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0).item()
+    f1 = f1_score(y_gt_list, y_pred_list, average=average, zero_division=0)
+    precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0)
+    recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0)
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
 
-    # Calculate ROC AUC
+    # Calculate ROC AUC (multi-class)
+    y_pred_scores_list = np.array(y_pred_scores_list)
+    n_label = y_pred_scores_list.shape[1]
+    y_gt_list_binary = label_binarize(y_gt_list, classes=list(range(n_label)))
+
+    fpr_multiclass_list = []
+    tpr_multiclass_list = []
+    roc_auc_multiclass_list = []
+
+    for i in range(n_label):
+        # Skip class if no positive instances
+        if np.sum(y_gt_list_binary[:, i]) == 0:
+            continue
+
+        fpr_multiclass, tpr_multiclass, _ = roc_curve(y_gt_list_binary[:, i], y_pred_scores_list[:, i])
+        roc_auc_multiclass = auc(fpr_multiclass, tpr_multiclass)
+
+        fpr_multiclass_list.append(fpr_multiclass.tolist())
+        tpr_multiclass_list.append(tpr_multiclass.tolist())
+        roc_auc_multiclass_list.append(roc_auc_multiclass.item())
+    
+    roc_auc_multiclass_avg = np.mean(roc_auc_multiclass_list).item()
+
+    # Calculate ROC AUC (binary)
     y_gt_list_binary = np.where(np.array(y_gt_list) == 0, 0, 1)
+    fpr_binary, tpr_binary, _ = roc_curve(y_gt_list_binary, y_pred_score_list)
+    fpr_binary, tpr_binary = fpr_binary.tolist(), tpr_binary.tolist()
+    roc_auc_binary = auc(fpr_binary, tpr_binary).item()
 
-    # print(f'{y_gt_list_binary=}')
-    # print(f'{y_pred_score_list=}')
-    # for gt, score in zip(y_gt_list_binary, y_pred_score_list):
-    #     print(gt, '<-->', score)
-
-    fpr, tpr, _ = roc_curve(y_gt_list_binary, y_pred_score_list)
-    fpr, tpr = fpr.tolist(), tpr.tolist()
-    roc_auc = auc(fpr, tpr).item()
-
-    return avg_loss, acc, f1, precision, recall, cm, fpr, tpr, roc_auc
+    return (
+        avg_loss, acc, f1, precision, recall, cm, 
+        # ROC AUC metrics (binary)
+        fpr_binary, tpr_binary, roc_auc_binary,
+        # ROC AUC metrics (multi-class)
+        fpr_multiclass_list, tpr_multiclass_list, roc_auc_multiclass_list, roc_auc_multiclass_avg
+    )
 
 # def eval_person_max_severity(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_max_severity(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
@@ -1948,16 +1959,16 @@ def set_seed(seed):
 def init_metrics(metric_names=['acc', 'f1', 'precision', 'recall', 'cm']):
     metrics = {}
     for metric_name in metric_names:
-        if metric_name in ['cm', 'fpr', 'tpr']:
-            metrics[metric_name] = {'folds': []}
-        else:
+        if metric_name in ['acc', 'f1', 'precision', 'recall', 'roc_auc_multiclass_avg']:
             metrics[metric_name] = {'folds': [], 'avg': None, 'std': None}
+        else:
+            metrics[metric_name] = {'folds': []}
     return metrics
 
 def update_metrics(metrics, in_metrics):
     for metric_name in in_metrics.keys():
         metrics[metric_name]['folds'] += [in_metrics[metric_name]]
-        if metric_name not in ['cm', 'fpr', 'tpr']:
+        if metric_name in ['acc', 'f1', 'precision', 'recall', 'roc_auc_multiclass_avg']:
             metrics[metric_name]['avg'] = np.mean(metrics[metric_name]['folds']).item()
             metrics[metric_name]['std'] = np.std(metrics[metric_name]['folds']).item()
     return metrics
@@ -2017,3 +2028,58 @@ def save_k_fold_metrics_roc_curves(metrics, k_fold):
         plt.close() # Close the figure to free memory
 
     print(f"All {k_fold}-Folds ROC curve figures saved successfully.")
+
+def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds):
+    k_fold = len(fpr_folds)
+    n_class = len(fpr_folds[0])
+
+    # Create subplots: Rows = Folds, Columns = Classes
+    fig, axes = plt.subplots(k_fold, n_class, figsize=(4 * n_class, 3 * k_fold))
+
+    for fold_idx in range(k_fold):
+        for class_idx in range(n_class):
+            ax = axes[fold_idx, class_idx] if k_fold > 1 else axes[class_idx]
+            
+            fpr = fpr_folds[fold_idx][class_idx]
+            tpr = tpr_folds[fold_idx][class_idx]
+            auc = auc_folds[fold_idx][class_idx]
+            
+            ax.plot(fpr, tpr, color='blue', linestyle='-', lw=2, label=f"AUC = {auc:.3f}")
+            ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+            ax.set_title(f"Fold {fold_idx+1} - Class {class_idx} ROC Curve")
+            ax.set_xlabel("FPR")
+            ax.set_ylabel("TPR")
+            ax.legend()
+            ax.grid()
+
+    plt.tight_layout()
+    plt.show()
+
+def save_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, save_dir='evaluations/roc_curves_multiclass'):
+    os.makedirs(save_dir, exist_ok=True)
+
+    k_fold = len(fpr_folds)
+    n_class = len(fpr_folds[0])
+
+    for fold_idx in range(k_fold):
+        for class_idx in range(n_class):
+            fig, ax = plt.subplots(figsize=(4, 3))
+            
+            fpr = fpr_folds[fold_idx][class_idx]
+            tpr = tpr_folds[fold_idx][class_idx]
+            auc = auc_folds[fold_idx][class_idx]
+            
+            ax.plot(fpr, tpr, color='blue', linestyle='-', lw=2, label=f"AUC = {auc:.3f}")
+            ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+            ax.set_title(f"Fold {fold_idx+1} - Class {class_idx} ROC Curve")
+            ax.set_xlabel("FPR")
+            ax.set_ylabel("TPR")
+            ax.legend()
+            ax.grid()
+
+            plt.tight_layout()
+            save_path = os.path.join(save_dir, f'fold_{fold_idx+1}_class_{class_idx}.png')
+            plt.savefig(save_path) # Save the figure separately
+            plt.close(fig) # Close the figure to free memory
+
+    print("Saved ROC curves (multi-class) in:", save_dir)
