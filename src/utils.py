@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import random
 import math
 import numpy as np
@@ -2227,3 +2228,10 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
 
     if save_dir:
         print("Saved in:", save_dir)
+
+def save_metrics_to_json(data, save_dir, filename):
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, filename)
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+    print("Saved as:", save_path)
