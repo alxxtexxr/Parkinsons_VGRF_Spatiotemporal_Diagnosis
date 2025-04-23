@@ -5,6 +5,7 @@ import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 import transformers
 from typing import Tuple
@@ -590,7 +591,6 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     f1 = f1_score(y_gt_list, y_pred_list, average=average, zero_division=0)
     precision = precision_score(y_gt_list, y_pred_list, average=average, zero_division=0)
     recall = recall_score(y_gt_list, y_pred_list, average=average, zero_division=0)
-    cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
 
     # Calculate ROC AUC (multi-class)
     y_pred_scores_list = np.array(y_pred_scores_list)
@@ -620,6 +620,9 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     fpr_binary, tpr_binary, _ = roc_curve(y_gt_list_binary, y_pred_score_list)
     fpr_binary, tpr_binary = fpr_binary.tolist(), tpr_binary.tolist()
     roc_auc_binary = auc(fpr_binary, tpr_binary).item()
+
+    # Calculate confusion matrix
+    cm = confusion_matrix(y_gt_list, y_pred_list, labels=list(range(n_label))).tolist()
 
     return (
         avg_loss, acc, f1, precision, recall, cm, 
@@ -2164,3 +2167,63 @@ def save_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsiz
         plt.close(fig) # Close the figure to free memory
 
     print("Saved ROC curves (multi-class) in:", save_dir)
+
+def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar=True, figsize=(24, 9), save_dir='evaluations/cm'):
+    # Convert to NumPy array
+    cm_folds = np.array(cm_folds, dtype=float)  # (folds, rows, cols)
+
+    # Normalize by row (axis=2 refers to summing across columns for each row)
+    row_sums = cm_folds.sum(axis=2, keepdims=True)
+    cm_folds_norm = np.divide(cm_folds, row_sums, where=row_sums != 0)
+
+    # Format annotations with percentages
+    annot_types = str(annot_types)
+    annots = np.empty_like(cm_folds_norm).astype(str)
+    for i_fold in range(cm_folds.shape[0]):
+        for j_row in range(cm_folds_norm.shape[1]):
+            for k_col in range(cm_folds_norm.shape[2]):
+                count = int(cm_folds[i_fold, j_row, k_col])
+                total_count = int(row_sums[j_row, k_col][0])
+                pct = cm_folds_norm[i_fold, j_row, k_col] * 100
+                annot = []
+                if 'pct' in annot_types: annot.append(f"{pct:.1f}%")
+                if 'frac' in annot_types: annot.append(f"{count}/{total_count}")
+                annots[i_fold, j_row, k_col] = "\n".join(annot) if len(annot) else count
+    
+    cols = 5
+    rows = int(np.ceil(cm_folds.shape[0] / cols))
+
+    fig, axs = plt.subplots(rows, cols, figsize=figsize)
+    axs = axs.flatten()
+
+    for i_fold, cm in enumerate(cm_folds_norm):
+        ax = axs[i_fold]
+
+        sns.heatmap(cm, annot=annots[i_fold], fmt="", ax=ax, cbar=cbar, vmin=0.0, vmax=1.0,
+                    cmap="Blues", linecolor='black', 
+                    xticklabels=class_names if class_names else "auto", 
+                    yticklabels=class_names if class_names else "auto")
+        ax.set_title(f"Fold {i_fold+1} - Confusion Matrix")
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("Actual")
+
+        # Add outer border
+        for _, spine in ax.spines.items():
+            spine.set_visible(True)
+            spine.set_linewidth(1)
+            spine.set_edgecolor('black')
+
+    for j in range(i_fold + 1, len(axs)):
+        fig.delaxes(axs[j])
+
+    plt.tight_layout()
+
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, '_fold_all.png')
+        plt.savefig(save_path)
+
+    plt.show()
+
+    if save_dir:
+        print("Saved in:", save_dir)
