@@ -1,6 +1,7 @@
 import os
 import time
 import random
+import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -2029,12 +2030,12 @@ def save_k_fold_metrics_roc_curves(metrics, k_fold):
 
     print(f"All {k_fold}-Folds ROC curve figures saved successfully.")
 
-def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds):
+def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, figsize=(4, 3), save_dir='evaluations/roc_curves_multiclass'):
     k_fold = len(fpr_folds)
     n_class = len(fpr_folds[0])
 
     # Create subplots: Rows = Folds, Columns = Classes
-    fig, axes = plt.subplots(k_fold, n_class, figsize=(4 * n_class, 3 * k_fold))
+    fig, axes = plt.subplots(k_fold, n_class, figsize=(figsize[0] * n_class, figsize[1] * k_fold))
 
     for fold_idx in range(k_fold):
         for class_idx in range(n_class):
@@ -2053,9 +2054,60 @@ def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds):
             ax.grid()
 
     plt.tight_layout()
+
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, '_fold_all.png')
+        plt.savefig(save_path)
+
     plt.show()
 
-def save_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, save_dir='evaluations/roc_curves_multiclass'):
+    if save_dir:
+        print("Saved in:", save_dir)
+
+def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2'):
+    k_fold = len(fpr_folds)
+    n_class = len(fpr_folds[0])
+
+    # Grid layout: 5 rows x 2 columns (adjust if k_fold < 10)
+    n_cols = 5
+    n_rows = math.ceil(k_fold / n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows))
+    axes = axes.flatten()  # Flatten for easier indexing
+
+    for fold_idx in range(k_fold):
+        ax = axes[fold_idx]
+        for class_idx in range(n_class):
+            fpr = fpr_folds[fold_idx][class_idx]
+            tpr = tpr_folds[fold_idx][class_idx]
+            auc = auc_folds[fold_idx][class_idx]
+            ax.plot(fpr, tpr, lw=2, label=f"Class {class_idx} (AUC = {auc:.3f})")
+
+        ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+        ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
+        ax.set_xlabel("FPR")
+        ax.set_ylabel("TPR")
+        ax.legend(loc="lower right")
+        ax.grid()
+
+    # Hide any unused subplots
+    for i in range(k_fold, len(axes)):
+        fig.delaxes(axes[i])
+
+    plt.tight_layout()
+
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, '_fold_all.png')
+        plt.savefig(save_path)
+
+    plt.show()
+
+    if save_dir:
+        print("Saved in:", save_dir)
+
+def save_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, figsize=(4, 3), save_dir='evaluations/roc_curves_multiclass'):
     os.makedirs(save_dir, exist_ok=True)
 
     k_fold = len(fpr_folds)
@@ -2063,7 +2115,7 @@ def save_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, save_dir=
 
     for fold_idx in range(k_fold):
         for class_idx in range(n_class):
-            fig, ax = plt.subplots(figsize=(4, 3))
+            fig, ax = plt.subplots(figsize=figsize)
             
             fpr = fpr_folds[fold_idx][class_idx]
             tpr = tpr_folds[fold_idx][class_idx]
@@ -2081,5 +2133,34 @@ def save_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, save_dir=
             save_path = os.path.join(save_dir, f'fold_{fold_idx+1}_class_{class_idx}.png')
             plt.savefig(save_path) # Save the figure separately
             plt.close(fig) # Close the figure to free memory
+
+    print("Saved ROC curves (multi-class) in:", save_dir)
+
+def save_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2'):
+    os.makedirs(save_dir, exist_ok=True)
+
+    k_fold = len(fpr_folds)
+    n_class = len(fpr_folds[0])
+
+    for fold_idx in range(k_fold):
+        fig, ax = plt.subplots(figsize=figsize)
+
+        for class_idx in range(n_class):
+            fpr = fpr_folds[fold_idx][class_idx]
+            tpr = tpr_folds[fold_idx][class_idx]
+            auc = auc_folds[fold_idx][class_idx]
+            ax.plot(fpr, tpr, lw=2, label=f"Class {class_idx} (AUC = {auc:.3f})")
+
+        ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+        ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
+        ax.set_xlabel("FPR")
+        ax.set_ylabel("TPR")
+        ax.legend(loc="lower right")
+        ax.grid()
+
+        plt.tight_layout()
+        save_path = os.path.join(save_dir, f'fold_{fold_idx+1}.png')
+        plt.savefig(save_path) # Save the figure separately
+        plt.close(fig) # Close the figure to free memory
 
     print("Saved ROC curves (multi-class) in:", save_dir)
