@@ -14,6 +14,7 @@ from IPython import display
 from torch.utils.data import Dataset, DataLoader
 from scipy import stats as st
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc, roc_auc_score
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import label_binarize
 
 class TorchDataset(Dataset):
@@ -2092,7 +2093,7 @@ def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_
         ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
-        ax.legend(loc="lower right")
+        ax.legend(loc='lower right')
         ax.grid()
 
     # Hide any unused subplots
@@ -2235,3 +2236,123 @@ def save_metrics_to_json(data, save_dir, filename):
     with open(save_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
     print("Saved as:", save_path)
+
+def find_substr(str_arr, substr):
+    return torch.tensor(np.char.find(str_arr, substr) != -1).bool()
+
+def plot_anomaly_detection(dataset_person, dataset_study, outlier_thresh=(None, None)):
+    mask = find_substr(dataset_person.ids, dataset_study)
+    X = dataset_person.X[mask]
+    y = dataset_person.y[mask]
+    ids = dataset_person.ids[mask]
+
+    N, W, F = X.shape
+    X = X.reshape(N, W*F).numpy()
+    X_list = [X[i, :] for i in range(X.shape[0])]
+    X_df = pd.DataFrame({'X': X_list, 'y': y, 'id': ids})
+
+    pca = PCA(n_components=2)
+    X_df[['X_pca_0', 'X_pca_1']] = pca.fit_transform(X)
+
+    X_df['outlier'] = 0
+    if outlier_thresh[0] is not None:
+        cond_lt = X_df['X_pca_1'] < outlier_thresh[0]
+        cond_gt = X_df['X_pca_1'] > outlier_thresh[0]
+        cond = cond_lt if cond_gt.sum() > cond_lt.sum() else cond_gt
+        X_df.loc[cond, 'outlier'] = 1
+    if outlier_thresh[1] is not None:
+        cond_lt = X_df['X_pca_0'] < outlier_thresh[1]
+        cond_gt = X_df['X_pca_0'] > outlier_thresh[1]
+        cond = cond_lt if cond_gt.sum() > cond_lt.sum() else cond_gt
+        X_df.loc[cond, 'outlier'] = 1
+
+    plt.figure(figsize=(6, 4))
+
+    for outlier, group in X_df.groupby('outlier'):
+        plt.scatter(group['X_pca_1'], group['X_pca_0'], s=5, 
+                    c='red' if outlier else 'blue', label='Anomaly' if outlier else 'Normal')
+
+    plt.title(f"{dataset_study} - Anomaly Detection")
+    plt.xlabel("PC-1")
+    plt.ylabel("PC-2")
+
+    if outlier_thresh[0] is not None:
+        plt.axvline(x=outlier_thresh[0], color='red', linestyle=':')
+    if outlier_thresh[1] is not None:
+        plt.axhline(y=outlier_thresh[1], color='red', linestyle=':')
+    
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figsize=(6, 4), save_dir='anomaly_detection'):
+    dataset_studies = ['Ga', 'Ju', 'Si']
+
+    n_cols = len(dataset_studies)
+    n_rows = 1
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows))
+    axes = axes.flatten()  # Flatten for easier indexing
+
+    for i, dataset_study in enumerate(dataset_studies):
+        outlier_thresh = outlier_thresh_map[dataset_study]
+
+        mask = find_substr(dataset_person.ids, dataset_study)
+        X = dataset_person.X[mask]
+        y = dataset_person.y[mask]
+        ids = dataset_person.ids[mask]
+
+        N, W, F = X.shape
+        X = X.reshape(N, W*F).numpy()
+        X_list = [X[i, :] for i in range(X.shape[0])]
+        X_df = pd.DataFrame({'X': X_list, 'y': y, 'id': ids})
+
+        pca = PCA(n_components=2)
+        X_df[['X_pca_0', 'X_pca_1']] = pca.fit_transform(X)
+
+        X_df['outlier'] = 0
+        if outlier_thresh[0] is not None:
+            cond_lt = X_df['X_pca_1'] < outlier_thresh[0]
+            cond_gt = X_df['X_pca_1'] > outlier_thresh[0]
+            cond = cond_lt if cond_gt.sum() > cond_lt.sum() else cond_gt
+            X_df.loc[cond, 'outlier'] = 1
+        if outlier_thresh[1] is not None:
+            cond_lt = X_df['X_pca_0'] < outlier_thresh[1]
+            cond_gt = X_df['X_pca_0'] > outlier_thresh[1]
+            cond = cond_lt if cond_gt.sum() > cond_lt.sum() else cond_gt
+            X_df.loc[cond, 'outlier'] = 1
+
+        ax = axes[i]
+        for outlier, group in X_df.groupby('outlier'):
+            ax.scatter(group['X_pca_1'], group['X_pca_0'], s=s, 
+                        c='red' if outlier else 'blue', label='Anomaly' if outlier else 'Normal')
+        
+        # Ensure both legends are shown
+        unique_outliers = X_df['outlier'].unique()
+        if 0 not in unique_outliers:
+            ax.scatter([], [], s=s, c='blue', label='Normal')
+        if 1 not in unique_outliers:
+            ax.scatter([], [], s=s, c='red', label='Anomaly')
+
+        ax.set_title(f"{dataset_study} - Anomaly Detection")
+        ax.set_xlabel("PC-1")
+        ax.set_ylabel("PC-2")
+
+        if outlier_thresh[0] is not None:
+            ax.axvline(x=outlier_thresh[0], color='red', linestyle=':')
+        if outlier_thresh[1] is not None:
+            ax.axhline(y=outlier_thresh[1], color='red', linestyle=':')
+
+        ax.legend()
+
+    plt.tight_layout()
+
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, '_GaJuSi.png')
+        plt.savefig(save_path)
+
+    plt.show()
+
+    if save_dir:
+        print("Saved in:", save_dir)
