@@ -2069,7 +2069,7 @@ def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, figsize=(
     if save_dir:
         print("Saved in:", save_dir)
 
-def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2'):
+def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_names, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2'):
     k_fold = len(fpr_folds)
     n_class = len(fpr_folds[0])
 
@@ -2086,7 +2086,7 @@ def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsiz
             fpr = fpr_folds[fold_idx][class_idx]
             tpr = tpr_folds[fold_idx][class_idx]
             auc = auc_folds[fold_idx][class_idx]
-            ax.plot(fpr, tpr, lw=2, label=f"Class {class_idx} (AUC = {auc:.3f})")
+            ax.plot(fpr, tpr, lw=2, label=f"{class_names[class_idx]} (AUC = {auc:.3f})")
 
         ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
         ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
