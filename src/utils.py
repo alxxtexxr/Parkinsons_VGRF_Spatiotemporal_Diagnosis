@@ -2090,7 +2090,7 @@ def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_
             ax.plot(fpr, tpr, lw=2, label=f"{class_names[class_idx]} (AUC = {auc:.3f})")
 
         ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
-        ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
+        ax.set_title(f"ROC Curves - Fold {fold_idx + 1}")
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
         ax.legend(loc='lower right')
@@ -2157,7 +2157,7 @@ def save_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsiz
             ax.plot(fpr, tpr, lw=2, label=f"Class {class_idx} (AUC = {auc:.3f})")
 
         ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
-        ax.set_title(f"Fold {fold_idx + 1} - Multiclass ROC Curves")
+        ax.set_title(f"ROC Curves - Fold {fold_idx + 1}")
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
         ax.legend(loc="lower right")
@@ -2205,7 +2205,7 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
                     cmap="Blues", linecolor='black', 
                     xticklabels=class_names if class_names else "auto", 
                     yticklabels=class_names if class_names else "auto")
-        ax.set_title(f"Fold {i_fold+1} - Confusion Matrix")
+        ax.set_title(f"Confusion Matrix - Fold {i_fold+1}")
         ax.set_xlabel("Predicted")
         ax.set_ylabel("Actual")
 
@@ -2272,7 +2272,7 @@ def plot_anomaly_detection(dataset_person, dataset_study, outlier_thresh=(None, 
         plt.scatter(group['X_pca_1'], group['X_pca_0'], s=5, 
                     c='red' if outlier else 'blue', label='Anomaly' if outlier else 'Normal')
 
-    plt.title(f"{dataset_study} - Anomaly Detection")
+    plt.title(f"Anomaly Detection - {dataset_study}")
     plt.xlabel("PC-1")
     plt.ylabel("PC-2")
 
@@ -2334,7 +2334,7 @@ def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figs
         if 1 not in unique_outliers:
             ax.scatter([], [], s=s, c='red', label='Anomaly')
 
-        ax.set_title(f"{dataset_study} - Anomaly Detection")
+        ax.set_title(f"Anomaly Detection - {dataset_study}")
         ax.set_xlabel("PC-1")
         ax.set_ylabel("PC-2")
 
