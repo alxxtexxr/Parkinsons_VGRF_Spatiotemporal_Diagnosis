@@ -6,3 +6,4 @@ transformers
 ipython
 scipy
 scikit-learn
+xlrd
