@@ -172,9 +172,10 @@ def print_h(h, nl=128):
     print(line)
 
 def check_dataset_info(X, y):
-    print(f"Dataset size (X, y): {len(X)}, {len(y)}")
+    assert X.shape[0] == y.shape[0], f"Mismatch between number of samples in X ({X.shape[0]}) and y ({y.shape[0]})"
+    print(f"Total data: {len(X)}")
     print("Label counts:")
-    print(pd.DataFrame(y).value_counts().sort_index())
+    print(pd.DataFrame(y).value_counts().sort_index().reset_index(drop=True))
 
 def calculate_anomaly_score(X):
     q3_list = pd.DataFrame(X).describe().loc['75%'].to_numpy()
@@ -2321,6 +2322,8 @@ def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figs
             cond_gt = X_df['X_pca_0'] > outlier_thresh[1]
             cond = cond_lt if cond_gt.sum() > cond_lt.sum() else cond_gt
             X_df.loc[cond, 'outlier'] = 1
+        
+        print(f"Dataset - {dataset_study} anomaly data IDs:", X_df[X_df['outlier'] == 1]['id'].tolist())
 
         ax = axes[i]
         for outlier, group in X_df.groupby('outlier'):
@@ -2356,3 +2359,31 @@ def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figs
 
     if save_dir:
         print("Saved in:", save_dir)
+
+def get_unique_rand_pair_idxs(n, limit):
+    # Generate all possible pairs
+    all_pairs = [(i, j) for i in range(limit) for j in range(limit) if i != j]
+
+    # Shuffle the pairs
+    random.shuffle(all_pairs)
+
+    # Take the first n unique pairs
+    unique_pairs = all_pairs[:n]
+
+    return unique_pairs
+
+def linear_interpolation(series1, series2, alpha=0.5):
+    return alpha * series1 + (1 - alpha) * series2
+
+def resample_linear_interpolation(X, n):
+    X_new_shape = [0] + list(X.shape[1:])
+    X_new = torch.empty(X_new_shape, dtype=torch.float32)
+    
+    for idx1, idx2 in get_unique_rand_pair_idxs(n, len(X)):
+        X_1 = X[idx1]
+        X_2 = X[idx2]
+        
+        X_new_i = linear_interpolation(X_1, X_2).unsqueeze(0)
+        X_new = torch.cat((X_new, X_new_i), dim=0)
+        
+    return X_new
