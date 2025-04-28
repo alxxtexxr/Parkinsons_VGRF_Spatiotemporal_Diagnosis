@@ -7,3 +7,4 @@ ipython
 scipy
 scikit-learn
 xlrd
+fire

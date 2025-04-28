@@ -498,7 +498,8 @@ def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=
             # If there's a label that is not 0 in the predicted labels
             # then the (final) predicted label is not 0 (Healthy)
             if (y_pred_labels > 0).any():
-                y_pred, count = torch.mode(y_pred_labels[y_pred_labels > 0]) # Get the most frequent label as the predicted label
+                # y_pred, count = torch.mode(y_pred_labels[y_pred_labels > 0]) # Get the most frequent label as the predicted label
+                y_pred = torch.bincount(y_pred_labels[y_pred_labels > 0]).argmax()
                 y_pred = y_pred.item()
             else:    
                 y_pred = 0
@@ -2231,12 +2232,12 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
     if save_dir:
         print("Saved in:", save_dir)
 
-def save_metrics_to_json(data, save_dir, filename):
+def save_metrics_to_json(metrics, save_dir, filename):
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, filename)
     with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-    print("Saved as:", save_path)
+        json.dump(metrics, f, indent=4, ensure_ascii=False)
+    # print("Saved as:", save_path)
 
 def find_substr(str_arr, substr):
     return torch.tensor(np.char.find(str_arr, substr) != -1).bool()
@@ -2387,3 +2388,11 @@ def resample_linear_interpolation(X, n):
         X_new = torch.cat((X_new, X_new_i), dim=0)
         
     return X_new
+
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device('cuda')
+    elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        return torch.device('mps')  # For Apple Silicon
+    else:
+        return torch.device('cpu')
