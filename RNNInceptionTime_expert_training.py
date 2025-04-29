@@ -13,8 +13,9 @@ from src.utils import (
 from src.models.RNNInceptionTime import RNNInceptionTime
 
 def main(
-        # Data parameters
         k_fold_dir,
+        n_epoch,
+        seed = 69,
 
         # Training parameters
         batch_size = 8,
@@ -22,10 +23,6 @@ def main(
         n_class = 4,
         window_size = 500,
         lr = 3e-4,
-        n_epoch = 5,
-
-        # General parameters
-        seed = 69,
     ):
 
     # Set seed and device
@@ -34,8 +31,8 @@ def main(
     print("Device:", device)
     
     # Set run name
-    run_name_tag = k_fold_dir.split('/')[-1].rsplit('_v', 1)[0] + '_'
-    run_name = f'RNNInceptionTime_{run_name_tag if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
+    run_name_tag = k_fold_dir.split('/')[-1].rsplit('_v', 1)[0] + f'_e{n_epoch}'
+    run_name = f'RNNInceptionTime_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
     print("Run name:", run_name)
 
     # Create save directory
