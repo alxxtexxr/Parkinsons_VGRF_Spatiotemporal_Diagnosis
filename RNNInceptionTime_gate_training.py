@@ -27,13 +27,18 @@ def main(
 
     # Training parameters
     batch_size = 8,
-    k_fold = 10,
     n_feat = 16,
     n_class = 4,
     window_size = 500,
     max_vgrf_data_len = 25_000,
     lr = 3e-4,
 ):
+    # Set seed and device
+    seed = 69
+    set_seed(seed)
+    device = get_device()
+    print("Device:", device)
+    
     # Set up k-fold data directory and expert model mappings
     k_fold_dir_map = {
         'Ga': k_fold_dir_Ga,
@@ -43,14 +48,16 @@ def main(
     model_dir_map = {
         'Ga': model_dir_Ga,
         'Ju': model_dir_Ju,
-        'Si': model_dir_Ju,
+        'Si': model_dir_Si,
     }
 
-    # Set seed and device
-    seed = 69
-    set_seed(seed)
-    device = get_device()
-    print("Device:", device)
+    # Set up model path mapping and get number of folds (K-fold)
+    model_path_map = {study: [model_dir_study+'/'+f for f in os.listdir(model_dir_study) if f.endswith('.pth')] 
+                    for study, model_dir_study in model_dir_map.items()}
+    assert len(set([len(model_path_study) for model_path_study in model_path_map.values()])) == 1, \
+        f"Inconsistent number of folds across dataset studies: {[len(v) for v in model_path_map.values()]}"
+    k_fold = len(list(model_path_map.values())[0])
+    print("K-fold:", k_fold)
 
     # Set run names
     run_name_tag = '_'.join([k_fold_dir.split('/')[-1].rsplit('_v', 1)[0] for k_fold_dir in k_fold_dir_map.values()]) + f'_e{n_epoch}'
@@ -177,9 +184,7 @@ def main(
                 expert_model = expert_model_map[study]
 
                 # Load pretrained model
-                model_dir = model_dir_map[study]
-                model_i_name = os.listdir(model_dir)[i_fold]
-                model_i_path = os.path.join(model_dir, model_i_name)
+                model_i_path = model_path_map[study][i_fold]
                 expert_model.load_state_dict(torch.load(model_i_path, map_location=device))
             
                 # ================================================================
