@@ -3,6 +3,7 @@ __pycache__
 .DS_Store
 checkpoints/**/*.pth
 checkpoints/**/_evaluation_metrics.json
+checkpoints_backup
 data/**/*.npy
 data/gait-in-parkinsons-disease-1.0.0
 data/gait-in-parkinsons-disease-1.0.0.zip
