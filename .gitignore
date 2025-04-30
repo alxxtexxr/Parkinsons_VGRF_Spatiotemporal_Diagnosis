@@ -8,5 +8,6 @@ data/**/*.npy
 data/gait-in-parkinsons-disease-1.0.0
 data/gait-in-parkinsons-disease-1.0.0.zip
 data/preprocessed_backup
+data_backup
 evaluations
 anomaly_detection
