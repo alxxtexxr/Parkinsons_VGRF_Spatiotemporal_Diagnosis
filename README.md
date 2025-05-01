@@ -1,16 +1,9 @@
 # RNN-InceptionTime-MoE Model for Spatiotemporal Diagnosis of Parkinson’s disease on VGRF Data
 
-## Result Folder Paths
-- Evaluation results:
-    - General metrics (accuracy, F1, precision, and recall): `evaluations/general_metrics`
-    - Confusion Matrix (CM): `evaluations/cm`
-    - ROC curves: `evaluations/roc_curves_multiclass`
-- Anomaly detection results: `anomaly_detection`
-
 ## Hyperparameters
 
 ### General  
-These settings are shared across all Expert, Gate, and MoE models:
+These hyperparameters are shared across all Expert, Gate, and MoE models:
 
 **RNN**  
 - Input size: 500 (window size)  
