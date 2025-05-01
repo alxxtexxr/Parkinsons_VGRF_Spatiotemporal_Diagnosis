@@ -2072,7 +2072,7 @@ def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, figsize=(
     if save_dir:
         print("Saved in:", save_dir)
 
-def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_names, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2'):
+def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_names, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2', show=True):
     k_fold = len(fpr_folds)
     n_class = len(fpr_folds[0])
 
@@ -2109,7 +2109,8 @@ def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_
         save_path = os.path.join(save_dir, '_fold_all.png')
         plt.savefig(save_path)
 
-    plt.show()
+    if show:
+        plt.show()
 
     if save_dir:
         print("Saved in:", save_dir)
@@ -2172,7 +2173,7 @@ def save_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsiz
 
     print("Saved ROC curves (multi-class) in:", save_dir)
 
-def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar=True, figsize=(24, 9), save_dir='evaluations/cm'):
+def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar=True, figsize=(24, 9), save_dir='evaluations/cm', show=True):
     # Convert to NumPy array
     cm_folds = np.array(cm_folds, dtype=float)  # (folds, rows, cols)
 
@@ -2227,7 +2228,8 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
         save_path = os.path.join(save_dir, '_fold_all.png')
         plt.savefig(save_path)
 
-    plt.show()
+    if show:
+        plt.show()
 
     if save_dir:
         print("Saved in:", save_dir)
