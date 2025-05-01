@@ -21,9 +21,9 @@ def main(
     k_fold_dir_Si,
 
     # Expert model directory parameters
-    model_dir_Ga,
-    model_dir_Ju,
-    model_dir_Si,
+    expert_model_dir_Ga,
+    expert_model_dir_Ju,
+    expert_model_dir_Si,
 
     # Training parameters
     batch_size = 8,
@@ -45,18 +45,18 @@ def main(
         'Ju': k_fold_dir_Ju,
         'Si': k_fold_dir_Si,
     }
-    model_dir_map = {
-        'Ga': model_dir_Ga,
-        'Ju': model_dir_Ju,
-        'Si': model_dir_Si,
+    expert_model_dir_map = {
+        'Ga': expert_model_dir_Ga,
+        'Ju': expert_model_dir_Ju,
+        'Si': expert_model_dir_Si,
     }
 
     # Set up model path mapping and get number of folds (K-fold)
-    model_path_map = {study: [model_dir_study+'/'+f for f in os.listdir(model_dir_study) if f.endswith('.pth')] 
-                    for study, model_dir_study in model_dir_map.items()}
-    assert len(set([len(model_path_study) for model_path_study in model_path_map.values()])) == 1, \
-        f"Inconsistent number of folds across dataset studies: {[len(v) for v in model_path_map.values()]}"
-    k_fold = len(list(model_path_map.values())[0])
+    expert_model_path_map = {study: [expert_model_dir_study+'/'+f for f in os.listdir(expert_model_dir_study) if f.endswith('.pth')] 
+                    for study, expert_model_dir_study in expert_model_dir_map.items()}
+    assert len(set([len(expert_model_path_study) for expert_model_path_study in expert_model_path_map.values()])) == 1, \
+        f"Inconsistent number of folds across dataset studies: {[len(v) for v in expert_model_path_map.values()]}"
+    k_fold = len(list(expert_model_path_map.values())[0])
     print("K-fold:", k_fold)
 
     # Set run names
@@ -65,7 +65,7 @@ def main(
 
     v = datetime.now().strftime("%Y%m%d%H%M%S")
     gate_run_name = f'RNNInceptionTime_gate_{run_name_tag+'_' if run_name_tag else ''}v{v}'
-    moe_run_name = f'RNNInceptionTimeMoE_{run_name_tag+'_' if run_name_tag else ''}v{v}'
+    moe_run_name = f'RNNInceptionTimeMoE_gate_{run_name_tag+'_' if run_name_tag else ''}v{v}'
     print("Gate model run name:", gate_run_name)
     print("MoE model run name:", moe_run_name)
     print()
@@ -184,7 +184,7 @@ def main(
                 expert_model = expert_model_map[study]
 
                 # Load pretrained model
-                model_i_path = model_path_map[study][i_fold]
+                model_i_path = expert_model_path_map[study][i_fold]
                 expert_model.load_state_dict(torch.load(model_i_path, map_location=device))
             
                 # ================================================================
@@ -411,7 +411,7 @@ def main(
             # ================================================================================================
             # GATE MODEL CHECKPOINT SAVING
             # ================================================================================================
-            gate_save_path = os.path.join(gate_save_dir, f'fold_{i_fold+1}.pth')
+            gate_save_path = os.path.join(gate_save_dir, f'fold_{(i_fold+1):02}.pth')
             torch.save(gate_model.state_dict(), gate_save_path)
 
             print(f"Gate model checkpoint for fold {i_fold+1} is saved to:", gate_save_path)
@@ -419,7 +419,7 @@ def main(
             # ================================================================================================
             # MoE MODEL SAVING
             # ================================================================================================
-            moe_save_path = os.path.join(moe_save_dir, f'fold_{i_fold+1}.pth')
+            moe_save_path = os.path.join(moe_save_dir, f'fold_{(i_fold+1):02}.pth')
             torch.save(moe_model.state_dict(), moe_save_path)
 
             print(f"MoE model checkpoint for fold {i_fold+1} is saved to:", moe_save_path)
