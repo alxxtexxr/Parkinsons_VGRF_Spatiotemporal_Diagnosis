@@ -286,7 +286,7 @@ def main(
 
         print()
     
-    save_dir = preprocessed_data_dir + f'/{study}_k{k_fold}_w{window_size}_s{stride_size}_f{n_feat}{'_w_anomaly' if w_anomaly else ''}{'_wo_synth' if wo_synth else ''}_v{datetime.now().strftime("%Y%m%d%H%M%S")}'
+    save_dir = preprocessed_data_dir + f'/{study}_k{k_fold}_w{window_size}_s{stride_size}{'_w_anomaly' if w_anomaly else ''}{'_wo_synth' if wo_synth else ''}_v{datetime.now().strftime("%Y%m%d%H%M%S")}'
     print("Save directory:", save_dir)
     print()
 

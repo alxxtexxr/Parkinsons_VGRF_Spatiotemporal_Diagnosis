@@ -11,3 +11,12 @@ data/preprocessed_backup
 data_backup
 evaluations
 anomaly_detection
+
+3d_signal_in_box.png
+all_signal_transparant.png
+foot-sensor.ipynb
+foot_img.jpeg
+foot_img_2.jpeg
+foot_img_transparant.png
+plot_with_transparent_background.png
+warped_plot.png
