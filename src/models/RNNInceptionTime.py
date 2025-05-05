@@ -31,7 +31,7 @@ class _RNNInceptionTime_Base(nn.Module):
         inception_head_nf = nf * 4
         self.gap = GAP1d(1)
         
-        # Head layers
+        # FC layers
         self.concat = Concat()
         self.fc_dropout = nn.Dropout(fc_dropout) if fc_dropout else noop
         self.fc = nn.Linear(hidden_size * (1 + bidirectional) + inception_head_nf, c_out)
@@ -47,7 +47,7 @@ class _RNNInceptionTime_Base(nn.Module):
         x = self.inception_block(x)
         x = self.gap(x)
         
-        # Head forward
+        # FC forward
         x = self.concat([last_out, x])
         x = self.fc_dropout(x)
         x = self.fc(x)
