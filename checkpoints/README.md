@@ -7,3 +7,4 @@
 - `s`: The stride size.
 - `f`: The number of features.
 - `e`: The number of training epochs.
+- `i`: The `i`-th fold used for single-fold training.
