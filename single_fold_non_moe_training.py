@@ -15,7 +15,6 @@ from tsai.models.InceptionTime import InceptionTime
 from tsai.models.RNN import RNN
 
 def main(
-    i_single_fold,
     fold_i_dir_Ga,
     fold_i_dir_Ju,
     fold_i_dir_Si,
@@ -39,17 +38,21 @@ def main(
 
     # Set up single fold data directory mappings
     fold_i_dir_map = {
-        'Ga': fold_i_dir_Ga + f'/fold_{i_single_fold:02}',
-        'Ju': fold_i_dir_Ju + f'/fold_{i_single_fold:02}',
-        'Si': fold_i_dir_Si + f'/fold_{i_single_fold:02}',
+        'Ga': fold_i_dir_Ga,
+        'Ju': fold_i_dir_Ju,
+        'Si': fold_i_dir_Si,
     }
 
     # Generate name tag
-    run_name_tag = '_'.join([k_fold_dir.split('/')[-2].rsplit('_v', 1)[0] for k_fold_dir in fold_i_dir_map.values()]) + f'_e{n_epoch}'
+    i_folds = [int(fold_i_dir.split('fold_')[-1]) for fold_i_dir in fold_i_dir_map.values()]
+    assert len(set(i_folds)) == 1, f"Inconsistent fold numbers detected: {i_folds}"
+    i_fold = i_folds[0]
+    print("Fold number:", i_fold)
+    run_name_tag = '_'.join([k_fold_dir.split('/')[-2].rsplit('_v', 1)[0] for k_fold_dir in fold_i_dir_map.values()]) + f'_fold_{i_fold:02}_e{n_epoch}'
     print("Run name tag:", run_name_tag)
 
     # Set run name
-    run_name = f'{model_name}{'_bidirectional' if bidirectional else ''}_non_moe_i{i_single_fold}_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
+    run_name = f'{model_name}{'_bidirectional' if bidirectional else ''}_non_moe_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
     print("Run name:", run_name)
 
     # Create save directory
@@ -69,7 +72,7 @@ def main(
     # ================================================================================================================================
     # FOLD
     # ================================================================================================================================
-    print_h(f"FOLD {i_single_fold}", 128)
+    print_h(f"FOLD {i_fold}", 128)
 
     # ================================================================================================
     # DATA
@@ -379,10 +382,9 @@ def main(
     # ================================================================================================
     # CHECKPOINT SAVING
     # ================================================================================================
-    save_path = os.path.join(save_dir, f'fold_{i_single_fold}.pth')
+    save_path = os.path.join(save_dir, f'fold_{i_fold:02}.pth')
     torch.save(model.state_dict(), save_path)
-    print(f"Checkpoint for fold {i_single_fold} is saved to:", save_path)
-    print()
+    print(f"Checkpoint for fold {i_fold:02} is saved to:", save_path)
 
     save_metrics_to_json(metrics, save_dir, filename='_evaluation_metrics.json')
     print("Evaluation metrics is saved in:", save_dir)
