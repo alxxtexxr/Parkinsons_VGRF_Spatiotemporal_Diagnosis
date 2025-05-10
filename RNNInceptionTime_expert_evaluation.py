@@ -57,7 +57,7 @@ def main(
     }
 
     for i_fold in range(k_fold):
-        print_h(f"FOLD-{i_fold+1}", 128)
+        print_h(f"FOLD {i_fold+1}", 128)
 
         X_train_window_GaJuSi = torch.empty(0, window_size, n_feat).float()
         y_train_window_GaJuSi = torch.empty(0).long()

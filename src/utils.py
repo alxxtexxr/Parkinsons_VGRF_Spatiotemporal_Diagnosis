@@ -2005,7 +2005,7 @@ def plot_k_fold_metrics_roc_curves(metrics, k_fold, n_col=5):
         ax.set_ylim([0.0, 1.05])
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
-        ax.set_title(f"Fold-{i_fold+1} ROC Curve")
+        ax.set_title(f"FOLD {i_fold+1} ROC Curve")
         ax.legend(loc='lower right')
         ax.grid()
 
@@ -2031,7 +2031,7 @@ def save_k_fold_metrics_roc_curves(metrics, k_fold):
         plt.ylim([0.0, 1.05])
         plt.xlabel("FPR")
         plt.ylabel("TPR")
-        plt.title(f"Fold-{i_fold+1} ROC Curve")
+        plt.title(f"FOLD {i_fold+1} ROC Curve")
         plt.legend(loc='lower right')
         plt.grid()
 

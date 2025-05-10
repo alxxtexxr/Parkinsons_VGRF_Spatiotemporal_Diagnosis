@@ -82,7 +82,7 @@ def main(
     }
 
     for i_fold in range(k_fold):
-        print_h(f"FOLD-{i_fold+1}", 128)
+        print_h(f"FOLD {i_fold+1}", 128)
         
         expert_model_map = {
             'Ga': RNNInceptionTime(c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=True).to(device),

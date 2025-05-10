@@ -37,7 +37,7 @@ def main(
     print("Run name tag:", run_name_tag)
 
     # Set run name
-    run_name = f'RNNInceptionTime_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
+    run_name = f'{model_name}{'_bidirectional' if bidirectional else ''}_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
     print("Run name:", run_name)
 
     # Create save directory
