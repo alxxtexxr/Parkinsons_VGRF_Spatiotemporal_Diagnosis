@@ -24,7 +24,7 @@ def main(
     n_epoch,
     seed = 69,
 
-    # Training config
+    # Training parameters
     batch_size = 8,
     n_feat = 16,
     n_class = 4,
