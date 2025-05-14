@@ -20,6 +20,7 @@ from sklearn.preprocessing import label_binarize
 from src.models import RNNInceptionTime, InceptionTimeRNN
 from tsai.models.InceptionTime import InceptionTime
 from tsai.models.RNN import RNN
+from tsai.models.MLP import MLP
 
 class TorchDataset(Dataset):
     def __init__(self, X, y):
@@ -2403,12 +2404,14 @@ def get_device():
     else:
         return torch.device('cpu')
 
-def init_model(model_name, device, c_in, c_out, seq_len, bidirectional):
+def init_model(model_name, device, c_in, c_out, seq_len, bidirectional, layers=None, ps=None):
     if model_name == 'InceptionTime':
         return InceptionTime(c_in=c_in, c_out=c_out, seq_len=seq_len).to(device)
     elif model_name == 'RNN':
         return RNN(c_in=c_in, c_out=c_out, bidirectional=bidirectional).to(device)
     elif model_name == 'InceptionTimeRNN':
         return InceptionTimeRNN(c_in=c_in, c_out=c_out, seq_len=seq_len, bidirectional=bidirectional).to(device)
+    elif model_name == 'MLP':
+        return MLP(c_in=c_in, c_out=c_out, seq_len=seq_len, layers=layers, ps=ps).to(device)
     else:   # RNN-InceptionTime
         return RNNInceptionTime(c_in=c_in, c_out=c_out, seq_len=seq_len, bidirectional=bidirectional).to(device)
