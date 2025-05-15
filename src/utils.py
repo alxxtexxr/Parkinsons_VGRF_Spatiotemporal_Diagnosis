@@ -2077,7 +2077,11 @@ def plot_k_fold_roc_curves_multiclass(fpr_folds, tpr_folds, auc_folds, figsize=(
     if save_dir:
         print("Saved in:", save_dir)
 
-def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_names, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2', show=True):
+def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_names, figsize=(4, 4), save_dir='evaluations/roc_curves_multiclass/v2', show=True, i_folds=None):
+    if not i_folds:
+        i_folds = [i_fold+1 for i_fold in range(len(fpr_folds))]
+    assert len(fpr_folds) == len(tpr_folds) == len(auc_folds) == len(i_folds) # TODO: Add assert message
+
     k_fold = len(fpr_folds)
     n_class = len(fpr_folds[0])
 
@@ -2097,7 +2101,7 @@ def plot_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, class_
             ax.plot(fpr, tpr, lw=2, label=f"{class_names[class_idx]} (AUC = {auc:.3f})")
 
         ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
-        ax.set_title(f"ROC Curves - Fold {fold_idx + 1}")
+        ax.set_title(f"ROC Curves - Fold {i_folds[fold_idx]}")
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
         ax.legend(loc='lower right')
@@ -2178,42 +2182,52 @@ def save_k_fold_roc_curves_multiclass_v2(fpr_folds, tpr_folds, auc_folds, figsiz
 
     print("Saved ROC curves (multi-class) in:", save_dir)
 
-def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar=True, figsize=(24, 9), save_dir='evaluations/cm', show=True):
+def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar=True, figsize=(24, 9), save_dir='evaluations/cm', show=True, n_col=5, i_folds=None):
+    if not i_folds:
+        i_folds = [i_fold+1 for i_fold in range(len(cm_folds))]
+    assert len(cm_folds) == len(i_folds) # TODO: Add assert message
+
     # Convert to NumPy array
     cm_folds = np.array(cm_folds, dtype=float)  # (folds, rows, cols)
 
-    # Normalize by row (axis=2 refers to summing across columns for each row)
+    # Normalize by row
     row_sums = cm_folds.sum(axis=2, keepdims=True)
     cm_folds_norm = np.divide(cm_folds, row_sums, where=row_sums != 0)
 
-    # Format annotations with percentages
+    # Format annotations
     annot_types = str(annot_types)
-    annots = np.empty_like(cm_folds_norm).astype(str)
+    annots = np.empty_like(cm_folds_norm, dtype=object)
     for i_fold in range(cm_folds.shape[0]):
-        for j_row in range(cm_folds_norm.shape[1]):
-            for k_col in range(cm_folds_norm.shape[2]):
+        for j_row in range(cm_folds.shape[1]):
+            for k_col in range(cm_folds.shape[2]):
                 count = int(cm_folds[i_fold, j_row, k_col])
-                total_count = int(row_sums[j_row, k_col][0])
+                total_count = int(row_sums[i_fold, j_row, 0])  # corrected index
                 pct = cm_folds_norm[i_fold, j_row, k_col] * 100
                 annot = []
-                if 'pct' in annot_types: annot.append(f"{pct:.1f}%")
-                if 'frac' in annot_types: annot.append(f"{count}/{total_count}")
-                annots[i_fold, j_row, k_col] = "\n".join(annot) if len(annot) else count
-    
-    cols = 5
-    rows = int(np.ceil(cm_folds.shape[0] / cols))
+                if 'pct' in annot_types:
+                    annot.append(f"{pct:.1f}%")
+                if 'frac' in annot_types:
+                    annot.append(f"{count}/{total_count}")
+                annots[i_fold, j_row, k_col] = "\n".join(annot) if annot else str(count)
 
+    # Plot setup
+    k_fold = cm_folds.shape[0]
+    cols = n_col if n_col else k_fold
+    rows = int(np.ceil(k_fold / cols))
     fig, axs = plt.subplots(rows, cols, figsize=figsize)
+
+    # Ensure axs is iterable
+    if isinstance(axs, plt.Axes):
+        axs = np.array([axs])
     axs = axs.flatten()
 
-    for i_fold, cm in enumerate(cm_folds_norm):
-        ax = axs[i_fold]
-
-        sns.heatmap(cm, annot=annots[i_fold], fmt="", ax=ax, cbar=cbar, vmin=0.0, vmax=1.0,
-                    cmap="Blues", linecolor='black', 
-                    xticklabels=class_names if class_names else "auto", 
+    for fold_idx, cm in enumerate(cm_folds_norm):
+        ax = axs[fold_idx]
+        sns.heatmap(cm, annot=annots[fold_idx], fmt="", ax=ax, cbar=cbar,
+                    vmin=0.0, vmax=1.0, cmap="Blues", linecolor='black',
+                    xticklabels=class_names if class_names else "auto",
                     yticklabels=class_names if class_names else "auto")
-        ax.set_title(f"Confusion Matrix - Fold {i_fold+1}")
+        ax.set_title(f"Confusion Matrix - Fold {i_folds[fold_idx]}")
         ax.set_xlabel("Predicted")
         ax.set_ylabel("Actual")
 
@@ -2223,7 +2237,8 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
             spine.set_linewidth(1)
             spine.set_edgecolor('black')
 
-    for j in range(i_fold + 1, len(axs)):
+    # Remove unused subplots
+    for j in range(k_fold, len(axs)):
         fig.delaxes(axs[j])
 
     plt.tight_layout()
