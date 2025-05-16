@@ -20,3 +20,6 @@ foot_img_2.jpeg
 foot_img_transparant.png
 plot_with_transparent_background.png
 warped_plot.png
+aggregated_confusion_matrix.png
+cross_val_metrics.png
+ExpertResult.ipynb

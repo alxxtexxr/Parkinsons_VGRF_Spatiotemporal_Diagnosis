@@ -73,7 +73,7 @@ def main(
 
     # Get gate model name tag, name, and bidirectional parameter
     gate_name_tag = gate_model_path.rsplit('/')[-2].split('_Ga')[0]
-    gate_name = gate_name_tag.split('Gate_')[0]
+    gate_name = gate_name_tag.split('Gate')[0]
     gate_bidirectional = 'bidirectional' in gate_name_tag
     print("Gate model name tag:", gate_name_tag)
     print("Gate model name:", gate_name)
