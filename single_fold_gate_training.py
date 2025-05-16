@@ -13,7 +13,7 @@ from src.utils import (
 from src.models import HardMoE
 
 def main(
-    gate_name,
+    gate_name, # 'InceptionTime' | 'RNN' | 'InceptionTimeRNN' | 'RNNInceptionTime' | 'MLP'
     expert_model_path_Ga,
     expert_model_path_Ju,
     expert_model_path_Si,
