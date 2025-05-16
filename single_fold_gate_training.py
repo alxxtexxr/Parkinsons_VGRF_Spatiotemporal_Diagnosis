@@ -13,6 +13,7 @@ from src.utils import (
 from src.models import HardMoE
 
 def main(
+    gate_name,
     expert_model_path_Ga,
     expert_model_path_Ju,
     expert_model_path_Si,
@@ -21,6 +22,11 @@ def main(
     fold_i_dir_Si,
     n_epoch,
     seed = 69,
+
+    # Model parameters
+    gate_bidirectional = True,
+    gate_layers = None,
+    gate_ps = None,
 
     # Training parameters
     batch_size = 8,
@@ -42,17 +48,17 @@ def main(
         'Si': expert_model_path_Si,
     }
 
-    # Get model names and bidirectionality
-    model_names = [expert_model_dir.split('/')[-2].split('_'+study)[0] for study, expert_model_dir in expert_model_path_map.items()]
-    assert len(set(model_names)) == 1, f"Model names are inconsistent: {model_names}"
-    model_name = model_names[0]
-    if 'bidirectional' in model_name:
-        model_name = model_name.replace('_bidirectional', '')
-        bidirectional = True
+    # Get model names and bidirectional parameter
+    expert_names = [expert_model_dir.split('/')[-2].split('_'+study)[0] for study, expert_model_dir in expert_model_path_map.items()]
+    assert len(set(expert_names)) == 1, f"Expert model names are inconsistent: {expert_names}"
+    expert_name = expert_names[0]
+    if 'bidirectional' in expert_name:
+        expert_name = expert_name.replace('_bidirectional', '')
+        expert_bidirectional = True
     else:
-        bidirectional = False
-    print("Model name:", model_name)
-    print("Bidirectional:", bidirectional)
+        expert_bidirectional = False
+    print("Expert model name:", expert_name)
+    print("Expert model bidirectional:", expert_bidirectional)
 
     # Set up single fold data directory mapping
     fold_i_dir_map = {
@@ -69,14 +75,18 @@ def main(
     i_fold = i_folds[0]
     print("Fold number:", i_fold)
 
-    # Generate name tag
+    # Generate name tags
     run_name_tag = '_'.join([fold_i_dir.split('/')[-2].rsplit('_v', 1)[0] for fold_i_dir in fold_i_dir_map.values()]) + f'_fold_{i_fold:02}_e{n_epoch}'
+    gate_name_tag = f'{gate_name}Gate{'_bidirectional' if gate_bidirectional and gate_name in ['RNNInceptionTime', 'RNN'] else ''}{f'_l{len(gate_layers)}' if gate_layers and gate_name in ['MLP'] else ''}'
+    moe_name_tag = f'{expert_name}MoE{'_bidirectional' if expert_bidirectional else ''}{f'_{gate_name_tag}' if gate_name != expert_name else ''}'
     print("Run name tag:", run_name_tag)
+    print("Gate model name tag:", gate_name_tag)
+    print("MoE model name tag:", moe_name_tag)
 
     # Set run names
     v = datetime.now().strftime("%Y%m%d%H%M%S")
-    gate_run_name = f'{model_name}{'_bidirectional' if bidirectional else ''}_gate_{run_name_tag+'_' if run_name_tag else ''}v{v}'
-    moe_run_name = f'{model_name}MoE{'_bidirectional' if bidirectional else ''}_gate_{run_name_tag+'_' if run_name_tag else ''}v{v}'
+    gate_run_name = f'{gate_name_tag}_{run_name_tag+'_' if run_name_tag else ''}v{v}'
+    moe_run_name = f'{moe_name_tag}_{run_name_tag+'_' if run_name_tag else ''}v{v}'
     print("Gate model run name:", gate_run_name)
     print("MoE model run name:", moe_run_name)
     print()
@@ -116,9 +126,9 @@ def main(
     print_h(f"FOLD {i_fold}", 128)
 
     expert_model_map = {
-        'Ga': init_model(model_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=bidirectional),
-        'Ju': init_model(model_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=bidirectional),
-        'Si': init_model(model_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=bidirectional),
+        'Ga': init_model(expert_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=expert_bidirectional),
+        'Ju': init_model(expert_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=expert_bidirectional),
+        'Si': init_model(expert_name, device, c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=expert_bidirectional),
     }
 
     X_train_window_GaJuSi = torch.empty(0, window_size, n_feat).float()
@@ -229,7 +239,7 @@ def main(
     # GATE MODEL TRAINING
     # ================================================================
     print_h("TRAINING", 64)
-    gate_model = init_model(model_name, device, c_in=n_feat, c_out=len(study_label_map.keys()), seq_len=window_size, bidirectional=bidirectional)
+    gate_model = init_model(gate_name, device, c_in=n_feat, c_out=len(study_label_map.keys()), seq_len=window_size, bidirectional=gate_bidirectional)
 
     # Initialize optimizer and loss function
     optimizer = torch.optim.Adam(gate_model.parameters(), lr=lr)
