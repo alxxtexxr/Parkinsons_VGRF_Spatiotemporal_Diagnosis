@@ -529,7 +529,10 @@ def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=
     return avg_loss, acc, f1, precision, recall, cm
 
 # def eval_person_majority_voting(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
-def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
+def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False, seed=69):
+    set_seed(seed)
+    print()
+    
     stride_size = window_size
     device = next(iter(model.parameters())).device
     
@@ -1948,6 +1951,10 @@ def eval_person_max_severity_xfx(model, dataset, window_size, stride_size, zeros
 # NEW UPDATES
 # ================================================================
 def set_seed(seed):
+    # Set random seed for os
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':16:8'  # CUDA deterministic behavior (11.2+)
+
     # Set random seed for NumPy
     np.random.seed(seed)
 
@@ -1955,6 +1962,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)  # if using multi-GPU
+    torch.use_deterministic_algorithms(True)
     torch.backends.cudnn.deterministic = True  # Ensures deterministic results
     torch.backends.cudnn.benchmark = False  # Avoids non-deterministic algorithms
 
@@ -1962,10 +1970,7 @@ def set_seed(seed):
     transformers.set_seed(seed)
 
     # Optionally set random seed for sklearn and Python's own random module
-    random.seed(seed)
-
-    # Set random seed for os
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed) 
 
     print(f"Random seed: {seed}")
 

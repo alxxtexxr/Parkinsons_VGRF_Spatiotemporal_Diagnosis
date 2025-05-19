@@ -312,9 +312,9 @@ def main(
         # ================================================================================================
         # CHECKPOINT SAVING
         # ================================================================================================
-        save_path = os.path.join(save_dir, f'fold_{i_fold+1}.pth')
+        save_path = os.path.join(save_dir, f'fold_{(i_fold+1):02}.pth')
         torch.save(model.state_dict(), save_path)
-        print(f"Checkpoint for fold {i_fold+1} is saved to:", save_path)
+        print(f"Checkpoint for fold {(i_fold+1):02} is saved to:", save_path)
         print()
 
         # DEBUG: Test for only one fold
