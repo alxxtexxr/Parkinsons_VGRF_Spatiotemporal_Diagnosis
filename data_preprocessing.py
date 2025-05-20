@@ -348,7 +348,7 @@ def main(
         # ================================================================================================
         # print_h("DATA SAVING", 96)
         
-        fold_i_dir = os.path.join(save_dir, f'fold_{i_fold+1}')
+        fold_i_dir = os.path.join(save_dir, f'fold_{(i_fold+1):02}')
         os.makedirs(fold_i_dir, exist_ok=True)
         
         # Save person datasets

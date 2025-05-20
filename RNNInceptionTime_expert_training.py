@@ -1,4 +1,5 @@
 import os
+import time
 import fire
 import numpy as np
 import torch
@@ -32,7 +33,7 @@ def main(
     
     # Set run name
     run_name_tag = k_fold_dir.split('/')[-1].rsplit('_v', 1)[0] + f'_e{n_epoch}'
-    run_name = f'RNNInceptionTime_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
+    run_name = f'RNNInceptionTime_bidirectional_{run_name_tag+'_' if run_name_tag else ''}v{datetime.now().strftime("%Y%m%d%H%M%S")}'
     print("Run name:", run_name)
 
     # Create save directory
@@ -43,15 +44,18 @@ def main(
 
     # Initialize evaluation metrics
     metrics = {
-        'window': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        'window': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss', 'train_time']),
         'person_majority_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
-        'person_severity_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
-        'person_max_severity': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        # 'person_severity_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        # 'person_max_severity': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
     }
 
-    for i_fold, fold_i_dir_name in enumerate(sorted(os.listdir(k_fold_dir))):
+    for fold_i_dir_name in sorted(os.listdir(k_fold_dir)):
+        # ================================================================================================================================
+        # FOLD
+        # ================================================================================================================================
         fold_i_dir = os.path.join(k_fold_dir, fold_i_dir_name)
-        print_h(f"FOLD {i_fold+1}", 128)
+        print_h(fold_i_dir_name, 128)
 
         # ================================================================================================
         # DATA
@@ -101,9 +105,12 @@ def main(
         global_val_loss_window_list = []
         global_val_loss_person_list = []
         global_train_loss_list = []
+        global_train_time_list = []
         train_loss_list = []
-        # step = 0
+        
         for epoch in range(n_epoch):
+            start_time = time.time()
+            
             # Loop training batches
             for iter, (X_train, y_train) in enumerate(train_dataloader):
                 # Flush the computed gradients
@@ -119,49 +126,48 @@ def main(
                 # Compute training loss
                 train_loss = criterion(y_pred, y_train)
                 train_loss_list.append(train_loss)
-                
-                # if (iter+1) % 'step_siz']= 0:
-                if iter+1 == len(train_dataloader):
-                    # ================================================================
-                    # VALIDATION
-                    # ================================================================
-                    avg_val_loss_window, acc_window, f1_window, *_ = eval_window(model, val_dataloader, criterion, average='weighted')
-                    avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, test_person_dataset, criterion=criterion, average='weighted',
-                                                                                                    window_size=window_size)
-                    
-                    global_val_loss_window_list.append(avg_val_loss_window)
-                    global_val_loss_person_list.append(avg_val_loss_person)
-                    
-                    # Compute the average training loss for each epoch
-                    avg_train_loss = sum(train_loss_list) / len(train_dataloader)
-                    global_train_loss_list.append(avg_train_loss.item())
-                    train_loss_list = []
-                    
-                    # ================================================================
-                    # LOGGING
-                    # ================================================================
-                    print(f"epoch: {epoch+1}, "
-                        # f"iter: {iter+1}, "
-                        # f"step: {step+1}, "
-                        f"train/loss: {avg_train_loss:.3f}, "
-                        f"val/loss_window: {avg_val_loss_window:.3f}, "
-                        f"val/acc_window: {acc_window:.3f}, "
-                        f"val/f1_window: {f1_window:.3f}, "
-                        f"val/loss_person: {avg_val_loss_person:.3f}, "
-                        f"val/acc_person: {acc_person:.3f}, "
-                        f"val/f1_person: {f1_person:.3f}"
-                    )
-                    
-                    # Switch the model back to training mode
-                    model.train()
-                    
-                    # step += 1
-                
+                            
                 # Backward pass the model
                 train_loss.backward()
                 
                 # Update the model weights based on computed gradients
                 optimizer.step()
+
+            # Compute training time
+            train_time = time.time() - start_time
+            global_train_time_list.append(train_time)
+            
+            # ================================================================
+            # VALIDATION
+            # ================================================================
+            avg_val_loss_window, acc_window, f1_window, *_ = eval_window(model, val_dataloader, criterion, average='weighted')
+            avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, test_person_dataset, criterion=criterion, average='weighted',
+                                                                                        window_size=window_size)
+            
+            global_val_loss_window_list.append(avg_val_loss_window)
+            global_val_loss_person_list.append(avg_val_loss_person)
+            
+            # Compute the average training loss for each epoch
+            avg_train_loss = sum(train_loss_list) / len(train_dataloader)
+            global_train_loss_list.append(avg_train_loss.item())
+            train_loss_list = []
+            
+            # ================================================================
+            # LOGGING
+            # ================================================================
+            print(f"epoch: {epoch+1}, "
+                f"train/loss: {avg_train_loss:.3f}, "
+                f"val/loss_window: {avg_val_loss_window:.3f}, "
+                f"val/acc_window: {acc_window:.3f}, "
+                f"val/f1_window: {f1_window:.3f}, "
+                f"val/loss_person: {avg_val_loss_person:.3f}, "
+                f"val/acc_person: {acc_person:.3f}, "
+                f"val/f1_person: {f1_person:.3f}, "
+                f"train/time: {train_time:.1f}s"
+            )
+            
+            # Switch the model back to training mode
+            model.train()
         print()
 
         # ================================================================================================
@@ -222,54 +228,54 @@ def main(
         # ================================================================
         # EVALUATION ON PERSON DATA BY SEVERITY VOTING
         # ================================================================
-        print_h("EVALUATION ON PERSON DATA BY SEVERITY VOTING", 64)
-        (
-            _, 
-            acc_person_severity_voting, 
-            f1_person_severity_voting, 
-            precision_person_severity_voting, 
-            recall_person_severity_voting, 
-            cm_person_severity_voting,
-        ) = eval_person_severity_voting(
-            model, 
-            val_person_dataset, 
-            criterion=None, 
-            average='weighted',
-            window_size=window_size, 
-            debug=False,
-        )
-        print("acc:", acc_person_severity_voting)
-        print("f1:", f1_person_severity_voting)
-        print("precision:", precision_person_severity_voting)
-        print("recall:", recall_person_severity_voting)
-        print("cm:\n", np.array(cm_person_severity_voting))
-        print()
+        # print_h("EVALUATION ON PERSON DATA BY SEVERITY VOTING", 64)
+        # (
+        #     _, 
+        #     acc_person_severity_voting, 
+        #     f1_person_severity_voting, 
+        #     precision_person_severity_voting, 
+        #     recall_person_severity_voting, 
+        #     cm_person_severity_voting,
+        # ) = eval_person_severity_voting(
+        #     model, 
+        #     val_person_dataset, 
+        #     criterion=None, 
+        #     average='weighted',
+        #     window_size=window_size, 
+        #     debug=False,
+        # )
+        # print("acc:", acc_person_severity_voting)
+        # print("f1:", f1_person_severity_voting)
+        # print("precision:", precision_person_severity_voting)
+        # print("recall:", recall_person_severity_voting)
+        # print("cm:\n", np.array(cm_person_severity_voting))
+        # print()
 
         # ================================================================
         # EVALUATION ON PERSON DATA BY MAX. SEVERITY
         # ================================================================
-        print_h("EVALUATION ON PERSON DATA BY MAX. SEVERITY", 64)
-        (
-            _, 
-            acc_person_max_severity, 
-            f1_person_max_severity, 
-            precision_person_max_severity, 
-            recall_person_max_severity, 
-            cm_person_max_severity,
-        ) = eval_person_max_severity(
-            model, 
-            val_person_dataset, 
-            criterion=None, 
-            average='weighted',
-            window_size=window_size, 
-            debug=False,
-        )
-        print("acc:", acc_person_max_severity)
-        print("f1:", f1_person_max_severity)
-        print("precision:", precision_person_max_severity)
-        print("recall:", recall_person_max_severity)
-        print("cm:\n", np.array(cm_person_max_severity))
-        print()
+        # print_h("EVALUATION ON PERSON DATA BY MAX. SEVERITY", 64)
+        # (
+        #     _, 
+        #     acc_person_max_severity, 
+        #     f1_person_max_severity, 
+        #     precision_person_max_severity, 
+        #     recall_person_max_severity, 
+        #     cm_person_max_severity,
+        # ) = eval_person_max_severity(
+        #     model, 
+        #     val_person_dataset, 
+        #     criterion=None, 
+        #     average='weighted',
+        #     window_size=window_size, 
+        #     debug=False,
+        # )
+        # print("acc:", acc_person_max_severity)
+        # print("f1:", f1_person_max_severity)
+        # print("precision:", precision_person_max_severity)
+        # print("recall:", recall_person_max_severity)
+        # print("cm:\n", np.array(cm_person_max_severity))
+        # print()
 
         # Add evaluation metrics for current fold
         in_metrics = {
@@ -280,20 +286,20 @@ def main(
                 'recall': recall_person_majority_voting,
                 'cm': cm_person_majority_voting,
             },
-            'person_severity_voting': {
-                'acc': acc_person_severity_voting,
-                'f1': f1_person_severity_voting,
-                'precision': precision_person_severity_voting,
-                'recall': recall_person_severity_voting,
-                'cm': cm_person_severity_voting,
-            },
-            'person_max_severity': {
-                'acc': acc_person_max_severity,
-                'f1': f1_person_max_severity,
-                'precision': precision_person_max_severity,
-                'recall': recall_person_max_severity,
-                'cm': cm_person_max_severity,
-            },
+            # 'person_severity_voting': {
+            #     'acc': acc_person_severity_voting,
+            #     'f1': f1_person_severity_voting,
+            #     'precision': precision_person_severity_voting,
+            #     'recall': recall_person_severity_voting,
+            #     'cm': cm_person_severity_voting,
+            # },
+            # 'person_max_severity': {
+            #     'acc': acc_person_max_severity,
+            #     'f1': f1_person_max_severity,
+            #     'precision': precision_person_max_severity,
+            #     'recall': recall_person_max_severity,
+            #     'cm': cm_person_max_severity,
+            # },
             'window': {
                 'acc': acc_window,
                 'f1': f1_window,
@@ -308,19 +314,20 @@ def main(
 
         metrics['window']['train_loss']['folds'].append(global_train_loss_list)
         metrics['window']['val_loss']['folds'].append(global_val_loss_window_list)
+        metrics['window']['train_time']['folds'].append(global_train_time_list)
 
         # ================================================================================================
         # CHECKPOINT SAVING
         # ================================================================================================
-        save_path = os.path.join(save_dir, f'fold_{(i_fold+1):02}.pth')
+        save_path = os.path.join(save_dir, f'{fold_i_dir_name}.pth')
         torch.save(model.state_dict(), save_path)
-        print(f"Checkpoint for fold {(i_fold+1):02} is saved to:", save_path)
+        print(f"Checkpoint for {fold_i_dir_name} is saved to:", save_path)
         print()
 
         # DEBUG: Test for only one fold
         # break
 
-    save_metrics_to_json(metrics, save_dir, filename='_evaluation_metrics.json')
+    save_metrics_to_json(metrics, save_dir, filename='_train_evaluation_metrics.json')
     print("Evaluation metrics is saved in:", save_dir)
 
 if __name__ == '__main__':
