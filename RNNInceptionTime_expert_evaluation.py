@@ -56,9 +56,16 @@ def main(
         'Si': 2,
     }
 
-    for i_fold in range(k_fold):
-        print_h(f"FOLD {i_fold+1}", 128)
+    for fold_i_dir_name in sorted(os.listdir(k_fold_dir)):
+        # ================================================================================================================================
+        # FOLD
+        # ================================================================================================================================
+        fold_i_dir = os.path.join(k_fold_dir, fold_i_dir_name)
+        print_h(fold_i_dir_name, 128)
 
+        # ================================================================================================
+        # DATA
+        # ================================================================================================
         X_train_window_GaJuSi = torch.empty(0, window_size, n_feat).float()
         y_train_window_GaJuSi = torch.empty(0).long()
         study_labels_train_window_GaJuSi = torch.empty(0).long()
@@ -78,11 +85,6 @@ def main(
         X_test_person_GaJuSi = torch.empty(0, max_vgrf_data_len, n_feat).float()
         y_test_person_GaJuSi = torch.empty(0).long()
         # study_labels_test_person_GaJuSi = torch.empty(0).long()
-
-        print_h(f"EXPERT-{study} MODEL", 96)
-
-        fold_i_dir_name = os.listdir(k_fold_dir)[i_fold]
-        fold_i_dir = os.path.join(k_fold_dir, fold_i_dir_name)
 
         X_train_window = torch.tensor(np.load(os.path.join(fold_i_dir, f'X_train_window.npy'))).float()
         y_train_window = torch.tensor(np.load(os.path.join(fold_i_dir, f'y_train_window.npy'))).long()
@@ -125,12 +127,20 @@ def main(
         train_dataloader = DataLoader(train_window_dataset, batch_size=batch_size, shuffle=True)
         val_dataloader = DataLoader(val_window_dataset, batch_size=batch_size, shuffle=False)
         test_dataloader = DataLoader(test_window_dataset, batch_size=batch_size, shuffle=False)
+
+        # ================================================================================================s
+        # MODEL
+        # ================================================================================================s
+        print_h(f"EXPERT-{study} MODEL", 96)
         
         # Load pretrained expert model
         model = RNNInceptionTime(c_in=n_feat, c_out=n_class, seq_len=window_size, bidirectional=True).to(device)
-        model_i_path = model_paths[i_fold]
+        model_i_path = os.path.join(model_dir, fold_i_dir_name + '.pth')
         model.load_state_dict(torch.load(model_i_path, map_location=device))
 
+        # ================================================================
+        # EVALUATION ON PERSON DATA BY MAJORITY VOTING          
+        # ================================================================
         print_h("EVALUATION ON PERSON DATA BY MAJORITY VOTING", 64)
         (
             _, 
@@ -142,11 +152,12 @@ def main(
             *_
         ) = eval_person_majority_voting(
             model, 
-            val_person_dataset, 
+            test_person_dataset, 
             criterion=None, 
             average='weighted',
             window_size=window_size, 
-            debug=False
+            debug=False,
+            seed=seed,
         )
         print("acc:", acc_person_majority_voting)
         print("f1:", f1_person_majority_voting)
