@@ -1,5 +1,6 @@
 # RNN-InceptionTime-MoE Model for Spatiotemporal Diagnosis of Parkinson’s disease on VGRF Data
 
+<!--
 ## Hyperparameters
 
 ### General  
@@ -27,3 +28,4 @@ These hyperparameters are shared across all Expert, Gate, and MoE models:
 
 ### Gate Model
 - Output size: 3 (labels: Ga, Ju, Si)
+-->
