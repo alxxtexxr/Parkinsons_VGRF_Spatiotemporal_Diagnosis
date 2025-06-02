@@ -40,6 +40,9 @@ def main(
     set_seed(seed)
     device = get_device()
     print("Device:", device)
+    
+    print("Gate layers:", gate_layers)
+    print("Gate dropout probabilities:", gate_ps)
 
     # Set up expert model checkpoint file path mapping
     expert_model_path_map = {
@@ -239,7 +242,8 @@ def main(
     # GATE MODEL TRAINING
     # ================================================================
     print_h("TRAINING", 64)
-    gate_model = init_model(gate_name, device, c_in=n_feat, c_out=len(study_label_map.keys()), seq_len=window_size, bidirectional=gate_bidirectional)
+    gate_model = init_model(gate_name, device, c_in=n_feat, c_out=len(study_label_map.keys()), seq_len=window_size, 
+                            bidirectional=gate_bidirectional, layers=gate_layers, ps=gate_ps)
 
     # Initialize optimizer and loss function
     optimizer = torch.optim.Adam(gate_model.parameters(), lr=lr)
