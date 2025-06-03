@@ -175,11 +175,12 @@ def main(
                 *_
             ) = eval_person_majority_voting(
                 expert_model, 
-                val_person_dataset, 
+                test_person_dataset, 
                 criterion=None, 
                 average='weighted',
                 window_size=window_size, 
-                debug=False
+                debug=False,
+                seed=seed,
             )
             print("acc:", acc_person_majority_voting)
             print("f1:", f1_person_majority_voting)

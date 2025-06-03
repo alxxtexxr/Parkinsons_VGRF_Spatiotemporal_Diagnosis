@@ -303,7 +303,7 @@ def main(
     #     cm_person_severity_voting,
     # ) = eval_person_severity_voting(
     #     model, 
-    #     val_person_dataset, 
+    #     test_person_dataset, 
     #     criterion=None, 
     #     average='weighted',
     #     window_size=window_size, 
@@ -329,7 +329,7 @@ def main(
     #     cm_person_max_severity,
     # ) = eval_person_max_severity(
     #     model, 
-    #     val_person_dataset, 
+    #     test_person_dataset, 
     #     criterion=None, 
     #     average='weighted',
     #     window_size=window_size, 

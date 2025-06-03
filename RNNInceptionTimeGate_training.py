@@ -193,8 +193,8 @@ def main(
             # EXPERT MODEL EVALUATION ON PERSON DATA BY MAJORITY VOTING
             # ================================================================
             print_h("EVALUATION ON PERSON DATA BY MAJORITY VOTING", 64)
-            _, acc_person_majority_voting, f1_person_majority_voting, precision_person_majority_voting, recall_person_majority_voting, cm_person_majority_voting, *_ = eval_person_majority_voting(expert_model, val_person_dataset, criterion=None, average='weighted',
-                                                                                                                                                                                                    window_size=window_size, debug=False)
+            _, acc_person_majority_voting, f1_person_majority_voting, precision_person_majority_voting, recall_person_majority_voting, cm_person_majority_voting, *_ = eval_person_majority_voting(expert_model, test_person_dataset, criterion=None, average='weighted',
+                                                                                                                                                                                                    window_size=window_size, debug=False, seed=seed)
             print("acc:", acc_person_majority_voting)
             print("f1:", f1_person_majority_voting)
             print("precision:", precision_person_majority_voting)
