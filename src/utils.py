@@ -2229,7 +2229,7 @@ def plot_k_fold_cm(cm_folds, class_names=None, annot_types=['pct', 'frac'], cbar
     for fold_idx, cm in enumerate(cm_folds_norm):
         ax = axs[fold_idx]
         sns.heatmap(cm, annot=annots[fold_idx], fmt="", ax=ax, cbar=cbar,
-                    vmin=0.0, vmax=1.0, cmap="Blues", linecolor='black',
+                    vmin=0, vmax=1, cmap="Blues", linecolor='black',
                     xticklabels=class_names if class_names else "auto",
                     yticklabels=class_names if class_names else "auto")
         ax.set_title(f"Confusion Matrix - Fold {i_folds[fold_idx]}")
