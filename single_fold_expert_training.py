@@ -48,10 +48,10 @@ def main(
 
     # Initialize evaluation metrics
     metrics = {
-        'window': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
         'person_majority_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
-        'person_severity_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
-        'person_max_severity': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        # 'person_severity_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        # 'person_max_severity': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
+        'window': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 'train_loss', 'val_loss']),
     }
 
     # ================================================================================================================================
@@ -132,7 +132,7 @@ def main(
                 # VALIDATION
                 # ================================================================
                 avg_val_loss_window, acc_window, f1_window, *_ = eval_window(model, val_dataloader, criterion, average='weighted')
-                avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, test_person_dataset, criterion=criterion, average='weighted',
+                avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, val_person_dataset, criterion=criterion, average='weighted',
                                                                                                 window_size=window_size)
                 
                 global_val_loss_window_list.append(avg_val_loss_window)
@@ -229,56 +229,54 @@ def main(
     # ================================================================
     # EVALUATION ON PERSON DATA BY SEVERITY VOTING
     # ================================================================
-    print_h("EVALUATION ON PERSON DATA BY SEVERITY VOTING", 64)
-    (
-        _, 
-        acc_person_severity_voting, 
-        f1_person_severity_voting, 
-        precision_person_severity_voting, 
-        recall_person_severity_voting, 
-        cm_person_severity_voting,
-    ) = eval_person_severity_voting(
-        model, 
-        test_person_dataset, 
-        criterion=None, 
-        average='weighted',
-        window_size=window_size, 
-        debug=False,
-        seed=seed,
-    )
-    print("acc:", acc_person_severity_voting)
-    print("f1:", f1_person_severity_voting)
-    print("precision:", precision_person_severity_voting)
-    print("recall:", recall_person_severity_voting)
-    print("cm:\n", np.array(cm_person_severity_voting))
-    print()
+    # print_h("EVALUATION ON PERSON DATA BY SEVERITY VOTING", 64)
+    # (
+    #     _, 
+    #     acc_person_severity_voting, 
+    #     f1_person_severity_voting, 
+    #     precision_person_severity_voting, 
+    #     recall_person_severity_voting, 
+    #     cm_person_severity_voting,
+    # ) = eval_person_severity_voting(
+    #     model, 
+    #     test_person_dataset, 
+    #     criterion=None, 
+    #     average='weighted',
+    #     window_size=window_size, 
+    #     debug=False,
+    # )
+    # print("acc:", acc_person_severity_voting)
+    # print("f1:", f1_person_severity_voting)
+    # print("precision:", precision_person_severity_voting)
+    # print("recall:", recall_person_severity_voting)
+    # print("cm:\n", np.array(cm_person_severity_voting))
+    # print()
 
     # ================================================================
     # EVALUATION ON PERSON DATA BY MAX. SEVERITY
     # ================================================================
-    print_h("EVALUATION ON PERSON DATA BY MAX. SEVERITY", 64)
-    (
-        _, 
-        acc_person_max_severity, 
-        f1_person_max_severity, 
-        precision_person_max_severity, 
-        recall_person_max_severity, 
-        cm_person_max_severity,
-    ) = eval_person_max_severity(
-        model, 
-        test_person_dataset, 
-        criterion=None, 
-        average='weighted',
-        window_size=window_size, 
-        debug=False,
-        seed=seed,
-    )
-    print("acc:", acc_person_max_severity)
-    print("f1:", f1_person_max_severity)
-    print("precision:", precision_person_max_severity)
-    print("recall:", recall_person_max_severity)
-    print("cm:\n", np.array(cm_person_max_severity))
-    print()
+    # print_h("EVALUATION ON PERSON DATA BY MAX. SEVERITY", 64)
+    # (
+    #     _, 
+    #     acc_person_max_severity, 
+    #     f1_person_max_severity, 
+    #     precision_person_max_severity, 
+    #     recall_person_max_severity, 
+    #     cm_person_max_severity,
+    # ) = eval_person_max_severity(
+    #     model, 
+    #     test_person_dataset, 
+    #     criterion=None, 
+    #     average='weighted',
+    #     window_size=window_size, 
+    #     debug=False,
+    # )
+    # print("acc:", acc_person_max_severity)
+    # print("f1:", f1_person_max_severity)
+    # print("precision:", precision_person_max_severity)
+    # print("recall:", recall_person_max_severity)
+    # print("cm:\n", np.array(cm_person_max_severity))
+    # print()
 
     in_metrics = {
         'person_majority_voting': {
@@ -288,20 +286,20 @@ def main(
             'recall': recall_person_majority_voting,
             'cm': cm_person_majority_voting,
         },
-        'person_severity_voting': {
-            'acc': acc_person_severity_voting,
-            'f1': f1_person_severity_voting,
-            'precision': precision_person_severity_voting,
-            'recall': recall_person_severity_voting,
-            'cm': cm_person_severity_voting,
-        },
-        'person_max_severity': {
-            'acc': acc_person_max_severity,
-            'f1': f1_person_max_severity,
-            'precision': precision_person_max_severity,
-            'recall': recall_person_max_severity,
-            'cm': cm_person_max_severity,
-        },
+        # 'person_severity_voting': {
+        #     'acc': acc_person_severity_voting,
+        #     'f1': f1_person_severity_voting,
+        #     'precision': precision_person_severity_voting,
+        #     'recall': recall_person_severity_voting,
+        #     'cm': cm_person_severity_voting,
+        # },
+        # 'person_max_severity': {
+        #     'acc': acc_person_max_severity,
+        #     'f1': f1_person_max_severity,
+        #     'precision': precision_person_max_severity,
+        #     'recall': recall_person_max_severity,
+        #     'cm': cm_person_max_severity,
+        # },
         'window': {
             'acc': acc_window,
             'f1': f1_window,

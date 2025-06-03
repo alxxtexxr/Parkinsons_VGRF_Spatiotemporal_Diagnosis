@@ -141,7 +141,7 @@ def main(
             # VALIDATION
             # ================================================================
             avg_val_loss_window, acc_window, f1_window, *_ = eval_window(model, val_dataloader, criterion, average='weighted')
-            avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, test_person_dataset, criterion=criterion, average='weighted',
+            avg_val_loss_person, acc_person, f1_person, *_ = eval_person_majority_voting(model, val_person_dataset, criterion=criterion, average='weighted',
                                                                                         window_size=window_size)
             
             global_val_loss_window_list.append(avg_val_loss_window)
