@@ -530,8 +530,7 @@ def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=
 
 # def eval_person_majority_voting(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False, seed=69):
-    set_seed(seed)
-    print()
+    set_seed(seed, verbose=False)
     
     stride_size = window_size
     device = next(iter(model.parameters())).device
@@ -544,9 +543,12 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     y_pred_list = []
     y_pred_score_list = []
     y_pred_scores_list = []
+    eval_time_list = []
 
     with torch.no_grad():
         for i, (X_person, y_person) in enumerate(dataset):
+            start_time = time.time()
+
             X_window, y_window, _ = get_vgrf_window_data(X_person.unsqueeze(0), 
                                                          y_person.unsqueeze(0).tolist(), 
                                                          window_size, 
@@ -585,6 +587,10 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
             if y_pred == 0:
                 y_pred_score = 1.0 - y_pred_score
             
+            # Compute evaluation time per person
+            eval_time = time.time() - start_time
+            eval_time_list.append(eval_time)
+
             if debug:
                 print(f"person: {(i+1):02d}, "
                       f"y_pred: {[f'{l} ({(p*100):.2f}%)' for l, p in zip(y_pred_labels.tolist(), y_pred_probs.tolist())]} -> {y_pred}, "
@@ -636,12 +642,16 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     # Calculate confusion matrix
     cm = confusion_matrix(y_gt_list, y_pred_list, labels=list(range(n_label))).tolist()
 
+    eval_time_avg = sum(eval_time_list) / len(eval_time_list)
+
     return (
         avg_loss, acc, f1, precision, recall, cm, 
         # ROC AUC metrics (binary)
         fpr_binary, tpr_binary, roc_auc_binary,
         # ROC AUC metrics (multi-class)
-        fpr_multiclass_list, tpr_multiclass_list, roc_auc_multiclass_list, roc_auc_multiclass_avg
+        fpr_multiclass_list, tpr_multiclass_list, roc_auc_multiclass_list, roc_auc_multiclass_avg,
+        # Evaluation time
+        eval_time_list, eval_time_avg,
     )
 
 # def eval_person_max_severity(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
@@ -1010,7 +1020,7 @@ def eval_person_majority_voting_pos(model, dataset, window_size, stride_size, ze
             
             y_pred, count = torch.mode(y_pred_labels) # Get the most frequent label as the predicted label
             y_pred = y_pred.item()
-            
+
             if debug:
                 print(f"person: {(i+1):02d}, "
                       f"y_pred: {[f'{l} ({(p*100):.2f}%)' for l, p in zip(y_pred_labels.tolist(), y_pred_probs.tolist())]} -> {y_pred}, "
@@ -1950,7 +1960,7 @@ def eval_person_max_severity_xfx(model, dataset, window_size, stride_size, zeros
 # ================================================================
 # NEW UPDATES
 # ================================================================
-def set_seed(seed):
+def set_seed(seed, verbose=True):
     # Set random seed for os
     os.environ['PYTHONHASHSEED'] = str(seed)
     os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':16:8'  # CUDA deterministic behavior (11.2+)
@@ -1972,7 +1982,8 @@ def set_seed(seed):
     # Optionally set random seed for sklearn and Python's own random module
     random.seed(seed) 
 
-    print(f"Random seed: {seed}")
+    if verbose:
+        print(f"Random seed: {seed}")
 
 def init_metrics(metric_names=['acc', 'f1', 'precision', 'recall', 'cm']):
     metrics = {}
@@ -1986,7 +1997,7 @@ def init_metrics(metric_names=['acc', 'f1', 'precision', 'recall', 'cm']):
 def update_metrics(metrics, in_metrics):
     for metric_name in in_metrics.keys():
         metrics[metric_name]['folds'] += [in_metrics[metric_name]]
-        if metric_name in ['acc', 'f1', 'precision', 'recall', 'roc_auc_multiclass_avg']:
+        if metric_name in ['acc', 'f1', 'precision', 'recall', 'roc_auc_multiclass_avg', 'eval_time_avg']:
             metrics[metric_name]['avg'] = np.mean(metrics[metric_name]['folds']).item()
             metrics[metric_name]['std'] = np.std(metrics[metric_name]['folds']).item()
     return metrics
