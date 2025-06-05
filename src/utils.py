@@ -17,7 +17,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import label_binarize
 
-from src.models import RNNInceptionTime, InceptionTimeRNN
+from src.models import RNNInceptionTime, InceptionTimeRNN, RNNInceptionTimeStacked
 from tsai.models.InceptionTime import InceptionTime
 from tsai.models.RNN import RNN
 from tsai.models.MLP import MLP
@@ -2442,6 +2442,8 @@ def init_model(model_name, device, c_in, c_out, seq_len, bidirectional, layers=N
         return RNN(c_in=c_in, c_out=c_out, bidirectional=bidirectional).to(device)
     elif model_name == 'InceptionTimeRNN':
         return InceptionTimeRNN(c_in=c_in, c_out=c_out, seq_len=seq_len, bidirectional=bidirectional).to(device)
+    elif model_name == 'RNNInceptionTimeStacked':
+        return RNNInceptionTimeStacked(c_in=c_in, c_out=c_out, seq_len=seq_len, bidirectional=bidirectional).to(device)
     elif model_name == 'MLP':
         return MLP(c_in=c_in, c_out=c_out, seq_len=seq_len, layers=layers, ps=ps).to(device)
     else:   # RNN-InceptionTime
