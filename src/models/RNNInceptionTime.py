@@ -61,3 +61,12 @@ class GRUInceptionTime(_RNNInceptionTime_Base):
 
 class LSTMInceptionTime(_RNNInceptionTime_Base):
     _cell = nn.LSTM
+
+if __name__ == '__main__':
+    n_feat = 16
+    n_class = 4
+    window_size = 500
+    x = torch.randn(1, n_feat, window_size)
+    model = RNNInceptionTime(c_in=n_feat, c_out=n_class, seq_len=window_size)
+    output = model(x)
+    print("Output shape:", output.shape)
