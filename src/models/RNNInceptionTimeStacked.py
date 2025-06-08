@@ -66,4 +66,4 @@ if __name__ == '__main__':
     x = torch.randn(1, n_feat, window_size)
     model = RNNInceptionTimeStacked(c_in=n_feat, seq_len=window_size, c_out=n_class)
     output = model(x)
-    print(output.shape)
+    print("Output shape:", output.shape)
