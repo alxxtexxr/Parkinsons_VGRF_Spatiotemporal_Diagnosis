@@ -529,7 +529,7 @@ def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=
     return avg_loss, acc, f1, precision, recall, cm
 
 # def eval_person_majority_voting(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
-def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False, seed=69):
+def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False, seed=69, get_window_datasets=False):
     set_seed(seed, verbose=False)
     
     stride_size = window_size
@@ -545,6 +545,10 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
     y_pred_scores_list = []
     eval_time_list = []
 
+    if get_window_datasets:
+        X_window_list = []
+        y_window_list = []
+
     with torch.no_grad():
         for i, (X_person, y_person) in enumerate(dataset):
             start_time = time.time()
@@ -558,6 +562,11 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
                 continue
             
             X_window = X_window.permute(0, 2, 1)
+
+            if get_window_datasets:
+                X_window_list.append(X_window)
+                y_window_list.append(y_window)
+
             X_window = X_window.to(device)
             y_window = y_window.to(device)
             
@@ -644,7 +653,7 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
 
     eval_time_avg = sum(eval_time_list) / len(eval_time_list)
 
-    return (
+    res = [
         avg_loss, acc, f1, precision, recall, cm, 
         # ROC AUC metrics (binary)
         fpr_binary, tpr_binary, roc_auc_binary,
@@ -652,7 +661,13 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
         fpr_multiclass_list, tpr_multiclass_list, roc_auc_multiclass_list, roc_auc_multiclass_avg,
         # Evaluation time
         eval_time_list, eval_time_avg,
-    )
+    ]
+
+    if get_window_datasets:
+        res.append(X_window_list)
+        res.append(y_window_list)
+
+    return res
 
 # def eval_person_max_severity(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_max_severity(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):

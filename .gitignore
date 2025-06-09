@@ -24,5 +24,6 @@ warped_plot.png
 aggregated_confusion_matrix.png
 cross_val_metrics.png
 ExpertResult.ipynb
+RNNInceptionTimeMoE_evaluation_rev.ipynb
 
 __MODELS_DATASETS__
