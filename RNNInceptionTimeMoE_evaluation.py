@@ -59,15 +59,15 @@ def main(
     k_fold = len(list(expert_model_path_map.values())[0])
     print("K-fold:", k_fold)
 
-    general_metrics_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTime_')[-1].split('_v')[0] + '/_general_metrics'
-    cm_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTime_')[-1].split('_v')[0] + '/cm'
-    roc_curves_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTime_')[-1].split('_v')[0] + '/roc_curves'
+    general_metrics_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTimeGate_')[-1].split('_v')[0] + '/_general_metrics'
+    cm_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTimeGate_')[-1].split('_v')[0] + '/cm'
+    roc_curves_dir = evaluations_dir + '/RNNInceptionTimeMoE_' + gate_model_dir.rsplit('RNNInceptionTimeGate_')[-1].split('_v')[0] + '/roc_curves'
     print("Evaluation general metrics save directory:", general_metrics_dir)
     print("Evaluation confusion matrix save directory:", cm_dir)
     print("Evaluation ROC curves save directory:", roc_curves_dir)
 
-    moe_metrics = init_metrics(['acc', 'f1', 'precision', 'recall', 'cm', 
-                                'fpr_multiclass_list', 'tpr_multiclass_list', 'roc_auc_multiclass_list', 'roc_auc_multiclass_avg'])
+    moe_metrics = init_metrics(['acc', 'f1', 'precision', 'recall', 'eval_time_avg', 'eval_time_list', 'cm', 
+                            'fpr_multiclass_list', 'tpr_multiclass_list', 'roc_auc_multiclass_list', 'roc_auc_multiclass_avg'])
     gate_metrics = init_metrics(['acc', 'f1', 'precision', 'recall', 'cm'])
     expert_metrics = {
         'Ga': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm']),
@@ -255,14 +255,18 @@ def main(
             fpr_multiclass_list_person_majority_voting, 
             tpr_multiclass_list_person_majority_voting, 
             roc_auc_multiclass_list_person_majority_voting, 
-            roc_auc_multiclass_avg_person_majority_voting
+            roc_auc_multiclass_avg_person_majority_voting,
+            eval_time_list,
+            eval_time_avg,
         ) = eval_person_majority_voting(
             moe_model, 
-            val_person_dataset_GaJuSi, 
+            test_person_dataset_GaJuSi, 
             criterion=None, 
             average='weighted',
             window_size=window_size, 
-            debug=False
+            debug=False,
+            seed=seed,
+            get_window_datasets=False,
         )
         print("acc:", acc_person_majority_voting)
         print("f1:", f1_person_majority_voting)
@@ -276,6 +280,8 @@ def main(
             'f1': f1_person_majority_voting,
             'precision': precision_person_majority_voting,
             'recall': recall_person_majority_voting,
+            'eval_time_avg': eval_time_avg,
+            'eval_time_list': eval_time_list,
             'cm': cm_person_majority_voting,
             'fpr_multiclass_list': fpr_multiclass_list_person_majority_voting, 
             'tpr_multiclass_list': tpr_multiclass_list_person_majority_voting, 
@@ -290,7 +296,8 @@ def main(
     # MoE MODEL METRICS
     # ================================================================================================================================
     print_h("MoE METRICS", 128)
-    save_metrics_to_json(moe_metrics, general_metrics_dir, '_MoE.json')
+    save_metrics_to_json(moe_metrics, general_metrics_dir, '_moe.json')
+    print()
     pprint(moe_metrics, sort_dicts=False)
 
     # ================================================================================================================================
