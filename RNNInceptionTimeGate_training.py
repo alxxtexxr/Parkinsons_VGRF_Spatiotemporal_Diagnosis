@@ -52,14 +52,6 @@ def main(
         'Si': expert_model_dir_Si,
     }
 
-    # Set up model path mapping and get number of folds (K-fold)
-    # expert_model_path_map = {study: [expert_model_dir_study+'/'+f for f in os.listdir(expert_model_dir_study) if f.endswith('.pth')] 
-    #                 for study, expert_model_dir_study in expert_model_dir_map.items()}
-    # assert len(set([len(expert_model_path_study) for expert_model_path_study in expert_model_path_map.values()])) == 1, \
-    #     f"Inconsistent number of folds across dataset studies: {[len(v) for v in expert_model_path_map.values()]}"
-    # k_fold = len(list(expert_model_path_map.values())[0])
-    # print("K-fold:", k_fold)
-
     # Set run names
     run_name_tag = '_'.join([k_fold_dir.split('/')[-1].rsplit('_v', 1)[0] for k_fold_dir in k_fold_dir_map.values()]) + f'_e{n_epoch}'
     print("Run name tag:", run_name_tag)
@@ -78,6 +70,7 @@ def main(
     os.makedirs(moe_save_dir, exist_ok=True)
     print("Gate model save directory:", gate_save_dir)
     print("MoE model save directory:", moe_save_dir)
+    
     print()
 
     # Initialize evaluation metrics
