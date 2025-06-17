@@ -61,8 +61,8 @@ class LSTMInceptionTime(_RNNInceptionTimeStacked_Base):
 
 if __name__ == '__main__':
     n_feat = 16
-    window_size = 500
     n_class = 4
+    window_size = 500
     x = torch.randn(1, n_feat, window_size)
     model = RNNInceptionTimeStacked(c_in=n_feat, seq_len=window_size, c_out=n_class)
     output = model(x)

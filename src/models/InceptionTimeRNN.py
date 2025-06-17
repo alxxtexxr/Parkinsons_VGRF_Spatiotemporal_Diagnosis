@@ -52,3 +52,12 @@ class InceptionTimeGRU(_InceptionTimeRNN_Base):
 
 class InceptionTimeLSTM(_InceptionTimeRNN_Base):
     _cell = torch.nn.LSTM
+
+if __name__ == '__main__':
+    n_feat = 16
+    n_class = 4
+    window_size = 500
+    x = torch.randn(1, n_feat, window_size)
+    model = InceptionTimeRNN(c_in=n_feat, seq_len=window_size, c_out=n_class)
+    output = model(x)
+    print("Output shape:", output.shape)

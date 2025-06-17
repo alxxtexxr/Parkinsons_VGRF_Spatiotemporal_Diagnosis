@@ -34,15 +34,11 @@ def main(
 
     # Get model name and dataset study
     model_name = model_dir.split('/')[-1]
-    study = model_name.split('RNNInceptionTime_')[-1].rsplit('_')[0]
+    study = model_name.rsplit('_k')[0].rsplit('_')[-1]
     print("Dataset study:", study)
     
-    # Get model paths and number of folds (K-fold)
-    model_paths = sorted([model_dir+'/'+f for f in os.listdir(model_dir) if f.endswith('.pth')])
-    k_fold = len([f for f in os.listdir(model_dir) if f.endswith('.pth')])
-
     # Initialize evaluation metrics
-    general_metrics_dir = evaluations_dir + f'/{model_name}/_general_metrics'
+    general_metrics_dir = f'evaluations/{model_name}/_general_metrics'
     metrics = {
         'person_majority_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm']),
         # 'person_severity_voting': init_metrics(['acc', 'f1', 'precision', 'recall', 'cm']),

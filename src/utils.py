@@ -329,7 +329,6 @@ def eval_window(model, dataloader, criterion=None, average='weighted'):
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
 
-# def eval_person(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
     stride_size = window_size
     device = next(iter(model.parameters())).device
@@ -394,7 +393,6 @@ def eval_person(model, dataset, window_size, zeros_filter_thres=1.0, criterion=N
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
 
-# def eval_person_with_thres(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', thres=0.5, debug=False):
 def eval_person_with_thres(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', thres=0.5, debug=False):
     stride_size = window_size
     device = next(iter(model.parameters())).device
@@ -462,7 +460,6 @@ def eval_person_with_thres(model, dataset, window_size, zeros_filter_thres=1.0, 
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
 
-# def eval_person_severity_voting(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
     stride_size = window_size
     device = next(iter(model.parameters())).device
@@ -669,7 +666,6 @@ def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=
 
     return res
 
-# def eval_person_max_severity(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_max_severity(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
     stride_size = window_size
     device = next(iter(model.parameters())).device
