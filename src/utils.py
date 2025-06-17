@@ -2340,7 +2340,7 @@ def plot_anomaly_detection(dataset_person, dataset_study, outlier_thresh=(None, 
     plt.tight_layout()
     plt.show()
 
-def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figsize=(6, 4), save_dir='anomaly_detection'):
+def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figsize=(6, 5), fontsize=12, save_dir='anomaly_detection'):
     dataset_studies = ['Ga', 'Ju', 'Si']
 
     n_cols = len(dataset_studies)
@@ -2348,6 +2348,8 @@ def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figs
 
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows))
     axes = axes.flatten()  # Flatten for easier indexing
+    
+    label_pick = ['(a)','(b)','(c)']
 
     for i, dataset_study in enumerate(dataset_studies):
         outlier_thresh = outlier_thresh_map[dataset_study]
@@ -2391,9 +2393,13 @@ def plot_anomaly_detection_GaJuSi(dataset_person, outlier_thresh_map, s=10, figs
         if 1 not in unique_outliers:
             ax.scatter([], [], s=s, c='red', label='Anomaly')
 
-        ax.set_title(f"Anomaly Detection - {dataset_study}")
-        ax.set_xlabel("PC-1")
-        ax.set_ylabel("PC-2")
+        # ax.set_title(f"Anomaly Detection - {dataset_study}")
+        # ax.set_xlabel(f"PC-1\n{label_pick[i]}")
+        # ax.set_ylabel("PC-2")
+        
+        ax.set_title(f"Anomaly Detection - {dataset_study}", fontsize=fontsize)  # Title
+        ax.set_xlabel(f"PC-1\n{label_pick[i]}", fontsize=fontsize)  # X-axis label
+        ax.set_ylabel("PC-2", fontsize=fontsize)  # Y-axis label
 
         if outlier_thresh[0] is not None:
             ax.axvline(x=outlier_thresh[0], color='red', linestyle=':')

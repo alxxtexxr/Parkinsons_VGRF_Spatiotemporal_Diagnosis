@@ -25,5 +25,9 @@ aggregated_confusion_matrix.png
 cross_val_metrics.png
 ExpertResult.ipynb
 RNNInceptionTimeMoE_evaluation_rev.ipynb
+Inference-mobile.ipynb
+Main-Result-Chart.ipynb
+model.pt
+test_windows.h5
 
 __MODELS_DATASETS__
