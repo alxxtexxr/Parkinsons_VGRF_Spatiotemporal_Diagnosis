@@ -29,5 +29,6 @@ Inference-mobile.ipynb
 Main-Result-Chart.ipynb
 model.pt
 test_windows.h5
+single_fold_moe_evaluation_output_visualization_tSNE.ipynb
 
 __MODELS_DATASETS__
