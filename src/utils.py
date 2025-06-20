@@ -126,28 +126,6 @@ def prepare_X_dec_and_y(y: torch.Tensor, label_len: int, pred_len: int) -> Tuple
     
     return X_dec, y
 
-# def prepare_dataloaders_for_forecasting_anomaly(X_train: np.ndarray, 
-#                                                 y_train: np.ndarray, 
-#                                                 labels_train: np.ndarray, 
-#                                                 X_test: np.ndarray, 
-#                                                 y_test: np.ndarray, 
-#                                                 labels_test: np.ndarray, 
-#                                                 batch_size: int) -> Tuple[DataLoader, DataLoader]:
-#     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-#     y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
-#     labels_train_tensor = torch.tensor(labels_train, dtype=torch.float32)
-#     X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-#     y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
-#     labels_test_tensor = torch.tensor(labels_test, dtype=torch.float32)
-
-#     train_dataset = TorchDatasetForForecastingAnomaly(X_train_tensor, y_train_tensor, labels_train_tensor)
-#     test_dataset = TorchDatasetForForecastingAnomaly(X_test_tensor, y_test_tensor, labels_test_tensor)
-    
-#     train_dataloader = DataLoader(train_dataset, batch_size, shuffle=True)
-#     test_dataloader = DataLoader(test_dataset, batch_size, shuffle=True)
-    
-#     return train_dataloader, test_dataloader
-
 def calculate_eval_metrics(pred_one_hot, gt_one_hot, n_data):
     tp = torch.sum((pred_one_hot == 1) & (gt_one_hot == 1), dim=0)
     fp = torch.sum((pred_one_hot == 1) & (gt_one_hot == 0), dim=0)
