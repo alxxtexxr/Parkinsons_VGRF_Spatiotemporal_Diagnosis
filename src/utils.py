@@ -503,7 +503,6 @@ def eval_person_severity_voting(model, dataset, window_size, zeros_filter_thres=
     cm = confusion_matrix(y_gt_list, y_pred_list).tolist()
     return avg_loss, acc, f1, precision, recall, cm
 
-# def eval_person_majority_voting(model, dataset, window_size, stride_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False):
 def eval_person_majority_voting(model, dataset, window_size, zeros_filter_thres=1.0, criterion=None, average='weighted', debug=False, seed=69, get_window_datasets=False):
     set_seed(seed, verbose=False)
     
