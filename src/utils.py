@@ -259,7 +259,8 @@ def get_vgrf_window_data(X, y, window_size: int, stride_size_: int, zeros_filter
             y_list.append(y[person_idx])
             person_idxs.append(person_idx)
         
-    vgrf_window_data_tensor = torch.tensor(np.array(X_window_list, dtype=np.float32), dtype=torch.float32)
+    # vgrf_window_data_tensor = torch.tensor(np.array(X_window_list, dtype=np.float32), dtype=torch.float32)
+    vgrf_window_data_tensor = torch.stack(X_window_list)
     
     # if vgrf_window_data_tensor.shape[1] < window_size:
     #     padding_tensor = torch.zeros((window_size - vgrf_window_data_tensor.shape[0], vgrf_window_data_tensor.shape[1]))
